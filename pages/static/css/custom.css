@@ -1,0 +1,30 @@
+/* متغيرات نظام التصميم — من ورقة نظام التصميم، تُستخدم بدل كتابة الكود مباشرة */
+:root{
+  --green-dark: #063e27;
+  --green-footer: #074d31;
+  --green-primary: #1b8354;
+  --green-link: #1b6b44;
+  --green-bg: #f3fcf6;
+  --green-border: #c8e6c9;
+
+  --text-dark: #1f2a37;
+  --text-mid: #4d5761;
+  --text-muted: #9ca3af;
+  --border: #d2d6db;
+  --bg-subtle: #f7fdf9;
+  --danger: #d4183d;
+}
+
+.news-track{
+  display:flex;
+  gap:20px;
+  width:max-content;
+  animation:marqueeRTL 28s linear infinite;
+}
+.news-track:hover{ animation-play-state:paused; }
+@keyframes marqueeRTL{
+  from{ transform:translateX(0); }
+  to{ transform:translateX(50%); }
+}
+
+

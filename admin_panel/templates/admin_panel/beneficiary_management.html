@@ -1,0 +1,313 @@
+{% extends "admin_panel/base.html" %}
+{% block content %}
+{{ beneficiaries_data|json_script:"beneficiaries-data" }}
+
+<div dir="rtl" class="min-h-screen bg-[#f8f9fa]" style="font-family: 'IBM Plex Sans Arabic', sans-serif;"
+     x-data="beneficiaryManagementPage()" x-init="init()">
+
+  <main class="max-w-screen-lg mx-auto px-4 sm:px-8 py-10">
+    <div class="mb-8">
+      <h1 class="text-[20px] font-bold text-[#161616]">إدارة الجهات المستفيدة</h1>
+      <p class="text-sm text-[#4d5761] mt-1">الجهات الداخلية المستفيدة من منح الجامعة</p>
+    </div>
+
+    {# Search + sort #}
+    <div class="flex flex-wrap items-center gap-2 mb-6">
+      <div class="relative flex-1">
+        <svg class="absolute top-1/2 -translate-y-1/2 right-3.5 w-4 h-4 text-[#9DA4AE] pointer-events-none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path stroke-linecap="round" stroke-linejoin="round" d="m21 21-4.3-4.3"/></svg>
+        <input
+          type="text"
+          x-model="query"
+          placeholder="ابحث باسم الجهة المستفيدة…"
+          class="w-full bg-white border border-[#E5E7EB] rounded-xl pr-10 pl-4 py-2.5 text-sm text-[#161616] placeholder:text-[#9DA4AE] focus:outline-none focus:border-[#1B8354] focus:ring-2 focus:ring-[#1B8354]/15 transition-all shadow-sm"
+        />
+        <span x-show="query" class="absolute top-1/2 -translate-y-1/2 left-3.5 text-xs text-[#4d5761]">
+          <span x-text="filtered.length"></span> نتيجة
+        </span>
+      </div>
+      <div class="relative flex-shrink-0">
+        <select
+          x-model="sortKey"
+          class="h-[42px] bg-white border border-[#E5E7EB] rounded-xl pr-3 pl-8 text-sm text-[#161616] focus:outline-none focus:border-[#1B8354] focus:ring-2 focus:ring-[#1B8354]/15 transition-all cursor-pointer shadow-sm appearance-none"
+        >
+          <option value="الأحدث">الأحدث</option>
+          <option value="الأكثر منحاً">الأكثر عدد منح</option>
+          <option value="الأعلى قيمة">الأعلى قيمة منح</option>
+          <option value="الأكثر مستفيدين">الأكثر عدد مستفيدين</option>
+        </select>
+        <svg class="absolute top-1/2 -translate-y-1/2 left-2.5 w-3.5 h-3.5 text-[#9DA4AE] pointer-events-none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6"/></svg>
+      </div>
+
+      {# Date range picker #}
+      <div class="relative flex-shrink-0" @click.outside="dpOpen = false; dpHover = null">
+        <button
+          @click="dpToggleOpen()"
+          :class="dpOpen
+            ? 'h-[42px] inline-flex items-center gap-1.5 border rounded-xl px-3 text-sm whitespace-nowrap transition-all shadow-sm bg-white border-[#1B8354] ring-2 ring-[#1B8354]/15 text-[#1B8354]'
+            : (dpLabel() ? 'h-[42px] inline-flex items-center gap-1.5 border rounded-xl px-3 text-sm whitespace-nowrap transition-all shadow-sm bg-[#F3FCF6] border-[#1B8354]/40 text-[#14573a] font-medium' : 'h-[42px] inline-flex items-center gap-1.5 border rounded-xl px-3 text-sm whitespace-nowrap transition-all shadow-sm bg-white border-[#E5E7EB] text-[#9DA4AE] hover:border-[#d1d5db]')"
+        >
+          <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M8 2v4"/><path stroke-linecap="round" d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path stroke-linecap="round" d="M3 10h18"/><path stroke-linecap="round" d="M8 14h.01"/><path stroke-linecap="round" d="M12 14h.01"/><path stroke-linecap="round" d="M16 14h.01"/><path stroke-linecap="round" d="M8 18h.01"/><path stroke-linecap="round" d="M12 18h.01"/><path stroke-linecap="round" d="M16 18h.01"/></svg>
+          <span class="max-w-[160px] truncate" x-text="dpLabel() || 'اختر التاريخ'"></span>
+          <span
+            x-show="dpLabel()"
+            @click.stop="dpClear()"
+            class="mr-0.5 flex items-center justify-center w-5 h-5 rounded-full bg-[#14573a]/15 hover:bg-[#14573a]/30 text-[#14573a] transition-colors flex-shrink-0"
+          >
+            <svg class="w-3 h-3" stroke-width="2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" d="M6 18L18 6M6 6l12 12"/></svg>
+          </span>
+        </button>
+
+        <div
+          x-show="dpOpen"
+          x-cloak
+          class="absolute top-full mt-2 left-0 z-50 bg-white rounded-2xl border border-[#E5E7EB] shadow-[0px_12px_40px_-4px_rgba(16,24,40,0.18),0px_4px_12px_-4px_rgba(16,24,40,0.10)] p-4 select-none"
+          style="width: 292px;"
+          dir="ltr"
+        >
+          <div class="flex items-center justify-between gap-2 mb-3 pb-3 border-b border-[#F3F4F6]" dir="rtl">
+            <span class="text-xs text-[#4d5761] whitespace-nowrap">أو اختر سنة كاملة</span>
+            <div class="relative flex-1">
+              <select
+                @change="dpPickYear($event)"
+                class="w-full h-8 border border-[#d2d6db] rounded-lg pr-2 pl-7 text-xs text-[#161616] focus:outline-none focus:border-[#1B8354] focus:ring-1 focus:ring-[#1B8354]/20 bg-white appearance-none"
+              >
+                <option value="" selected disabled>اختر السنة</option>
+                <template x-for="y in dpYearOptions" :key="y">
+                  <option :value="y" x-text="y"></option>
+                </template>
+              </select>
+              <svg class="absolute top-1/2 -translate-y-1/2 left-2 w-3 h-3 text-[#9DA4AE] pointer-events-none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6"/></svg>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between mb-3">
+            <button @click="dpPrevMonth()" class="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-[#F3F4F6] text-[#6B7280] transition-colors">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m15 18-6-6 6-6"/></svg>
+            </button>
+            <span class="text-sm font-semibold text-[#161616]" dir="rtl" x-text="dpMonthsAr[dpViewMonth] + ' ' + dpViewYear"></span>
+            <button @click="dpNextMonth()" class="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-[#F3F4F6] text-[#6B7280] transition-colors">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m9 18 6-6-6-6"/></svg>
+            </button>
+          </div>
+
+          <div class="grid grid-cols-7 mb-1">
+            <template x-for="d in dpDaysAr" :key="d">
+              <div class="text-center text-[10px] font-semibold text-[#9DA4AE] py-1" x-text="d"></div>
+            </template>
+          </div>
+
+          <div class="grid grid-cols-7">
+            <template x-for="(cell, idx) in dpCells()" :key="idx">
+              <div>
+                <div x-show="!cell.iso" class="h-8"></div>
+                <div
+                  x-show="cell.iso"
+                  @click="dpPickDay(cell.iso)"
+                  @mouseenter="dpStage === 'to' && (dpHover = cell.iso)"
+                  @mouseleave="dpStage === 'to' && (dpHover = null)"
+                  :class="`relative h-8 flex items-center justify-center cursor-pointer group ${dpInRange(cell.iso) ? 'bg-[#E8F8EF]' : ''}`"
+                >
+                  <span x-show="dpIsFrom(cell.iso) && dpEffectiveTo()" class="absolute inset-y-0 left-1/2 right-0 bg-[#E8F8EF]"></span>
+                  <span x-show="dpIsTo(cell.iso) && dateRange.from" class="absolute inset-y-0 left-0 right-1/2 bg-[#E8F8EF]"></span>
+                  <span x-show="dpIsEndpoint(cell.iso)" class="absolute inset-[3px] rounded-full bg-[#1B8354] shadow-sm"></span>
+                  <span x-show="!dpIsEndpoint(cell.iso) && !dpInRange(cell.iso)" class="absolute inset-[2px] rounded-lg bg-[#F3FCF6] opacity-0 group-hover:opacity-100 transition-opacity"></span>
+                  <span x-show="cell.iso === dpTodayISO && !dpIsEndpoint(cell.iso)" class="absolute bottom-[3px] left-1/2 -translate-x-1/2 w-[3px] h-[3px] rounded-full bg-[#1B8354]"></span>
+                  <span
+                    class="relative z-10 text-xs leading-none"
+                    :class="dpIsEndpoint(cell.iso) ? 'text-white font-bold' : (dpInRange(cell.iso) ? 'text-[#14573a] font-medium' : 'text-[#374151]')"
+                    x-text="cell.day"
+                  ></span>
+                </div>
+              </div>
+            </template>
+          </div>
+
+          <div class="mt-3 pt-2.5 border-t border-[#F3F4F6] text-center text-[10px] text-[#9DA4AE]" dir="rtl">
+            <span x-show="dpStage === 'from'">اضغط لاختيار تاريخ البداية</span>
+            <span x-show="dpStage !== 'from'" x-text="'اختر تاريخ النهاية' + (dateRange.from ? ' · البداية: ' + dpFmt(dateRange.from) : '')"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div x-show="filtered.length === 0" class="col-span-2 py-16 text-center text-sm text-[#9DA4AE]">
+        لا توجد جهات مستفيدة تطابق "<span x-text="query"></span>"
+      </div>
+
+      <template x-for="b in filtered" :key="b.id">
+        <a
+          :href="'{% url "beneficiary_management" %}' + b.id + '/'"
+          class="rounded-[16px] bg-white p-5 shadow-[0px_4px_8px_-2px_rgba(16,24,40,0.10),0px_2px_4px_-2px_rgba(16,24,40,0.06)] flex items-start gap-4 hover:ring-2 hover:ring-[#1B8354]/30 hover:shadow-[0px_8px_20px_-4px_rgba(27,131,84,0.15),0px_4px_8px_-4px_rgba(16,24,40,0.08)] transition-all duration-200 cursor-pointer group"
+        >
+          <div class="flex w-[48px] h-[48px] items-center justify-center rounded-full bg-[#F3FCF6] border border-[#D1FAE5] flex-shrink-0 mt-0.5">
+            <svg class="w-5 h-5 text-[#14573a]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/></svg>
+          </div>
+
+          <div class="flex-1 min-w-0">
+            <div class="flex items-start justify-between gap-2">
+              <div class="text-sm font-bold text-[#161616] leading-snug" x-text="b.name"></div>
+              <span class="inline-flex items-center shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-[#F3FCF6] text-[#1B8354] border-[#D1FAE5]">
+                <span x-text="b.grantsCount"></span> <span x-text="b.grantsCount === 1 ? 'منحة' : 'منح'"></span>
+              </span>
+            </div>
+
+            <div class="border-t border-[#F3F4F6] my-2.5"></div>
+
+            <div class="flex flex-col gap-1.5">
+              <div class="flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5 text-[#9DA4AE] flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path stroke-linecap="round" d="M6 12h.01M18 12h.01"/></svg>
+                <span class="text-[11px] text-[#4d5761]">
+                  إجمالي المنح المستلمة:
+                  <span class="font-semibold text-[#14573a]" x-text="b.totalAmount.toLocaleString('en-US') + ' ﷼'"></span>
+                </span>
+              </div>
+
+              <template x-if="b.lastDateFormatted">
+                <div class="flex items-center gap-1.5">
+                  <svg class="w-3.5 h-3.5 text-[#9DA4AE] flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M8 2v4"/><path stroke-linecap="round" d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path stroke-linecap="round" d="M3 10h18"/><path stroke-linecap="round" d="M8 14h.01"/><path stroke-linecap="round" d="M12 14h.01"/><path stroke-linecap="round" d="M16 14h.01"/><path stroke-linecap="round" d="M8 18h.01"/><path stroke-linecap="round" d="M12 18h.01"/><path stroke-linecap="round" d="M16 18h.01"/></svg>
+                  <span class="text-[11px] text-[#4d5761]">
+                    آخر منحة:
+                    <span class="font-medium text-[#374151]" x-text="b.lastDateFormatted"></span>
+                  </span>
+                </div>
+              </template>
+
+              <div class="flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5 text-[#9DA4AE] flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path stroke-linecap="round" stroke-linejoin="round" d="M22 21v-2a4 4 0 0 0-3-3.87"/><path stroke-linecap="round" stroke-linejoin="round" d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                <span class="text-[11px] text-[#4d5761]">
+                  المستفيدون:
+                  <span class="font-medium text-[#374151]" x-text="b.totalBeneficiaries.toLocaleString('en-US') + ' مستفيد'"></span>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-center w-8 h-8 rounded-full bg-[#F3F4F6] group-hover:bg-[#F3FCF6] group-hover:border group-hover:border-[#D1FAE5] transition-all flex-shrink-0 self-center">
+            <svg class="w-4 h-4 text-[#6B7280] group-hover:text-[#1B8354] transition-colors" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m15 18-6-6 6-6"/></svg>
+          </div>
+        </a>
+      </template>
+    </div>
+  </main>
+</div>
+
+<script>
+function beneficiaryManagementPage() {
+  return {
+    beneficiaries: [],
+    query: '',
+    sortKey: 'الأحدث',
+    dateRange: { from: '', to: '' },
+
+    dpOpen: false,
+    dpViewYear: new Date().getFullYear(),
+    dpViewMonth: new Date().getMonth(),
+    dpStage: 'from',
+    dpHover: null,
+    dpMonthsAr: ["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"],
+    dpDaysAr: ["أح","إث","ث","أر","خ","ج","س"],
+    dpTodayISO: '',
+
+    init() {
+      const raw = JSON.parse(document.getElementById('beneficiaries-data').textContent);
+      this.beneficiaries = raw.map(b => {
+        const lastDateTs = b.lastGrantDate ? new Date(b.lastGrantDate + 'T12:00:00').getTime() : null;
+        return {
+          ...b, lastDateTs,
+          lastDateFormatted: lastDateTs ? this.formatDate(new Date(lastDateTs)) : null,
+        };
+      });
+      const n = new Date();
+      this.dpTodayISO = this.dpToISO(n.getFullYear(), n.getMonth(), n.getDate());
+    },
+
+    formatDate(d) {
+      return d.toLocaleDateString('ar-SA-u-ca-gregory', { year: 'numeric', month: 'short', day: 'numeric' });
+    },
+
+    get filtered() {
+      const q = this.query.trim().toLowerCase();
+      const fromTs = this.dateRange.from ? new Date(this.dateRange.from).getTime() : 0;
+      const toTs = this.dateRange.to ? new Date(this.dateRange.to).getTime() + 86399999 : Infinity;
+      const list = this.beneficiaries.filter(b => {
+        const matchText = !q || b.name.toLowerCase().includes(q);
+        const ts = b.lastDateTs ?? 0;
+        const matchFrom = !this.dateRange.from || ts >= fromTs;
+        const matchTo = !this.dateRange.to || ts <= toTs;
+        return matchText && matchFrom && matchTo;
+      });
+      if (this.sortKey === 'الأحدث') list.sort((a, b) => (b.lastDateTs ?? 0) - (a.lastDateTs ?? 0));
+      else if (this.sortKey === 'الأكثر منحاً') list.sort((a, b) => b.grantsCount - a.grantsCount);
+      else if (this.sortKey === 'الأعلى قيمة') list.sort((a, b) => b.totalAmount - a.totalAmount);
+      else if (this.sortKey === 'الأكثر مستفيدين') list.sort((a, b) => b.totalBeneficiaries - a.totalBeneficiaries);
+      return list;
+    },
+
+    // ── date range picker logic (identical to donor_management.html) ──
+    dpToISO(y, m, d) { return `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`; },
+    dpFmt(iso) { return new Date(iso + 'T12:00:00').toLocaleDateString('ar-SA-u-ca-gregory', { day: 'numeric', month: 'short' }); },
+    dpLabel() {
+      if (!this.dateRange.from) return null;
+      if (!this.dateRange.to) return this.dpFmt(this.dateRange.from);
+      return `${this.dpFmt(this.dateRange.from)} – ${this.dpFmt(this.dateRange.to)}`;
+    },
+    dpToggleOpen() {
+      if (!this.dpOpen) {
+        if (this.dateRange.from) {
+          const d = new Date(this.dateRange.from + 'T12:00:00');
+          this.dpViewYear = d.getFullYear(); this.dpViewMonth = d.getMonth();
+        } else {
+          const n = new Date();
+          this.dpViewYear = n.getFullYear(); this.dpViewMonth = n.getMonth();
+        }
+        this.dpStage = (this.dateRange.from && !this.dateRange.to) ? 'to' : 'from';
+      }
+      this.dpOpen = !this.dpOpen;
+      this.dpHover = null;
+    },
+    dpPrevMonth() { if (this.dpViewMonth === 0) { this.dpViewMonth = 11; this.dpViewYear -= 1; } else this.dpViewMonth -= 1; },
+    dpNextMonth() { if (this.dpViewMonth === 11) { this.dpViewMonth = 0; this.dpViewYear += 1; } else this.dpViewMonth += 1; },
+    dpPickDay(iso) {
+      if (this.dpStage === 'from') {
+        this.dateRange = { from: iso, to: '' }; this.dpStage = 'to'; this.dpHover = null;
+      } else {
+        if (iso < this.dateRange.from) { this.dateRange = { from: iso, to: '' }; this.dpStage = 'to'; }
+        else if (iso === this.dateRange.from) { this.dateRange = { from: '', to: '' }; this.dpStage = 'from'; }
+        else { this.dateRange = { from: this.dateRange.from, to: iso }; this.dpOpen = false; this.dpStage = 'from'; this.dpHover = null; }
+      }
+    },
+    dpClear() { this.dateRange = { from: '', to: '' }; this.dpStage = 'from'; },
+    dpPickYear(e) {
+      const year = e.target.value;
+      if (!year) return;
+      this.dateRange = { from: `${year}-01-01`, to: `${year}-12-31` };
+      this.dpStage = 'from'; this.dpOpen = false;
+    },
+    get dpYearOptions() {
+      const currentYear = new Date().getFullYear();
+      return Array.from({ length: 11 }, (_, i) => currentYear + 1 - i);
+    },
+    dpEffectiveTo() {
+      return (this.dpStage === 'to' && this.dpHover && this.dateRange.from && this.dpHover > this.dateRange.from) ? this.dpHover : this.dateRange.to;
+    },
+    dpIsFrom(iso) { return iso === this.dateRange.from; },
+    dpIsTo(iso) { return iso === this.dateRange.to; },
+    dpIsEndpoint(iso) { return this.dpIsFrom(iso) || this.dpIsTo(iso); },
+    dpInRange(iso) {
+      const effectiveTo = this.dpEffectiveTo();
+      return !!(this.dateRange.from && effectiveTo && iso > this.dateRange.from && iso < effectiveTo);
+    },
+    dpCells() {
+      const firstDow = new Date(this.dpViewYear, this.dpViewMonth, 1).getDay();
+      const daysInMo = new Date(this.dpViewYear, this.dpViewMonth + 1, 0).getDate();
+      const cells = [];
+      for (let i = 0; i < firstDow; i++) cells.push({ iso: null, day: null });
+      for (let d = 1; d <= daysInMo; d++) cells.push({ iso: this.dpToISO(this.dpViewYear, this.dpViewMonth, d), day: d });
+      while (cells.length % 7 !== 0) cells.push({ iso: null, day: null });
+      return cells;
+    },
+  };
+}
+</script>
+{% endblock %}

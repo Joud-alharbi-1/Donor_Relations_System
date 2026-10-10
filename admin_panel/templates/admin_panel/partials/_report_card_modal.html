@@ -1,0 +1,103 @@
+{% comment %}
+── كارد تقرير الأثر (مستقل عن تفاصيل المنحة) — مشترك بين الداشبورد وصفحتي المانح والمستفيد ──
+يعتمد على نفس أسماء الحالة والدوال بمكوّن Alpine لكل صفحة:
+reportGrant, selectedReportIdx, reportPreviewUrl, closeReportCard(),
+reportFileName, confirmingReportUpload, uploadedReportId, confirmReportUpload(), cancelReportUpload(), undoReportUpload().
+كل عنصر في reportGrant.reports يحمل حقل stage ('preliminary' أو 'official') لتمييز مصدر التقرير.
+الرفع يمر بخطوة تأكيد قبل الإرسال الفعلي، وبعد الرفع تظهر مهلة تراجع 30 ثانية — نفس مبدأ واجهة المستفيد بالضبط.
+{% endcomment %}
+<div x-show="reportGrant" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
+  <div x-show="reportGrant" class="bg-white w-full max-w-xl rounded-[16px] shadow-[0px_20px_24px_-4px_rgba(16,24,40,0.10),0px_8px_8px_-4px_rgba(16,24,40,0.04)]" dir="rtl" style="font-family: 'IBM Plex Sans Arabic', sans-serif;" @click.outside="closeReportCard()">
+    <template x-if="reportGrant">
+    <div>
+      <div class="flex items-center justify-between px-6 py-4 border-b border-[#E5E7EB]">
+        <div class="min-w-0 flex-1">
+          <h2 class="text-sm font-bold text-[#161616] flex items-center gap-2">
+            <svg class="w-3.5 h-3.5 text-[#1B8354] flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="18" x2="18" y1="20" y2="10"/><line x1="12" x2="12" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="14"/></svg>
+            تقرير الأثر
+          </h2>
+          <p class="text-xs text-[#4d5761] mt-0.5 truncate" x-text="reportGrant.title"></p>
+        </div>
+        <button @click="closeReportCard()" title="إغلاق" class="inline-flex w-8 h-8 items-center justify-center rounded border border-[#d2d6db] text-[#161616] hover:bg-[#F3F4F6] transition-colors flex-shrink-0 mr-3">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path stroke-linecap="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <div class="px-6 py-6 space-y-4">
+        <template x-if="reportGrant.reports.length > 0">
+          <div class="space-y-3">
+            <div class="flex items-center justify-between gap-2">
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium"
+                    :class="(reportGrant.reports[selectedReportIdx] || {}).stage === 'preliminary' ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-[#F3FCF6] text-[#14573a] border border-[#88D8AD]'">
+                <svg class="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+                <span x-text="(reportGrant.reports[selectedReportIdx] || {}).stage === 'preliminary' ? 'مرفوع من المستفيد (بانتظار المراجعة)' : 'رسمي (ظاهر للجهة المانحة)'"></span>
+              </span>
+            </div>
+
+            <template x-if="(reportGrant.reports[selectedReportIdx] || {}).isPdf">
+              <div class="relative rounded-lg border border-[#88D8AD]/50 bg-[#F3FCF6] overflow-hidden h-80">
+                <iframe :src="reportPreviewUrl" class="w-full h-full" style="border:0;"></iframe>
+              </div>
+            </template>
+            <template x-if="!(reportGrant.reports[selectedReportIdx] || {}).isPdf">
+              <div class="flex flex-col items-center justify-center gap-2 rounded-lg border border-[#88D8AD]/50 bg-[#F3FCF6] h-80 px-6 text-center">
+                <svg class="w-8 h-8" fill="none" stroke="#1B8354" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg>
+                <p class="text-sm font-medium text-[#14573a]" x-text="(reportGrant.reports[selectedReportIdx] || {}).fileName"></p>
+                <p class="text-xs text-[#4d5761]">لا تتوفر معاينة لهذه الصيغة داخل الصفحة. يُرجى تحميل الملف لعرضه</p>
+              </div>
+            </template>
+
+            <div class="flex items-center gap-2">
+              <div class="relative flex-1">
+                <select x-model.number="selectedReportIdx"
+                        class="w-full appearance-none bg-[#F3F4F6] border border-[#d2d6db] rounded text-sm text-[#161616] focus:outline-none focus:border-[#1B8354] transition-colors cursor-pointer"
+                        style="padding-top:8px; padding-bottom:8px; padding-right:16px; padding-left:40px;">
+                  <template x-for="(r, i) in reportGrant.reports" :key="i">
+                    <option :value="i" x-text="r.label + (r.stage === 'preliminary' ? ' (مرفوع من المستفيد)' : ' (رسمي)')"></option>
+                  </template>
+                </select>
+                <svg class="absolute top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#4d5761] pointer-events-none" style="left:12px;" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6"/></svg>
+              </div>
+              <a :href="(reportGrant.reports[selectedReportIdx] || {}).url" :download="(reportGrant.reports[selectedReportIdx] || {}).fileName"
+                 class="inline-flex py-2 items-center justify-center rounded border border-[#1B8354] bg-[#1B8354] px-4 text-sm font-medium text-white hover:bg-[#166A45] transition-colors gap-2 flex-shrink-0">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+                تحميل التقرير
+              </a>
+            </div>
+          </div>
+        </template>
+
+        <p x-show="reportGrant.reports.length === 0" class="text-sm text-[#9DA4AE]">تقرير الأثر غير متاح بعد</p>
+
+        <div x-show="uploadedReportId !== null" x-cloak x-transition class="flex items-center justify-between gap-3 px-4 py-3 rounded-xl mb-2" style="background-color:#fff7ed;border:1px solid #fed7aa;">
+          <span class="text-xs font-medium" style="color:#9a3412;">تم رفع التقرير بنجاح. يمكن التراجع عن الرفع خلال 30 ثانية</span>
+          <button type="button" @click="undoReportUpload()" class="text-xs font-bold flex-shrink-0" style="color:#c2410c;">تراجع عن الرفع</button>
+        </div>
+
+        <div class="pt-2 border-t border-[#E5E7EB]">
+          <input x-ref="reportCardInput" type="file" accept=".pdf,.doc,.docx" class="hidden"
+                 @change="reportFileName = $event.target.files[0] ? $event.target.files[0].name : ''; confirmingReportUpload = false" />
+
+          <div x-show="!confirmingReportUpload" class="flex items-center gap-3 flex-wrap">
+            <button type="button" @click="$refs.reportCardInput.click()"
+                    class="inline-flex items-center gap-2 py-2 px-4 rounded border border-dashed border-[#1B8354] text-sm font-medium text-[#1B8354] hover:bg-[#F3FCF6] transition-colors">
+              <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+              <span x-text="reportFileName || 'رفع تقرير الأثر (رسمي)'"></span>
+            </button>
+            <button type="button" x-show="reportFileName" @click="confirmingReportUpload = true"
+                    class="inline-flex py-2 items-center justify-center rounded border border-[#1B8354] bg-[#1B8354] px-4 text-sm font-medium text-white hover:bg-[#166A45] transition-colors">تأكيد الرفع</button>
+          </div>
+
+          <div x-show="confirmingReportUpload" x-cloak class="flex items-center gap-2 flex-wrap rounded-lg border border-amber-200 px-3 py-2.5" style="background-color:#fffbeb;">
+            <span class="text-xs font-medium flex-1 min-w-[160px]" style="color:#92400e;">تأكيد رفع الملف <strong x-text="reportFileName"></strong>؟</span>
+            <button type="button" @click="cancelReportUpload()" class="text-xs px-3 py-1.5 rounded border border-[#d2d6db] text-[#4d5761] hover:bg-white transition-colors">إلغاء</button>
+            <button type="button" @click="confirmReportUpload()" class="text-xs font-medium px-3 py-1.5 rounded bg-[#1B8354] text-white hover:bg-[#166A45] transition-colors">تأكيد ورفع التقرير</button>
+          </div>
+
+          <p class="text-xs text-[#9DA4AE] mt-1.5">التقرير المرفوع هنا يُحفظ كتقرير رسمي ويظهر للجهة المانحة.</p>
+        </div>
+      </div>
+    </div>
+    </template>
+  </div>
+</div>

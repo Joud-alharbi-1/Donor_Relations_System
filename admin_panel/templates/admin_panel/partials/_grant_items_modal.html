@@ -1,0 +1,117 @@
+{% comment %}
+── كارد تفاصيل الأصناف المستلمة (قابل للتعديل) — مشترك بين الداشبورد وصفحتي المانح والمستفيد ──
+منقول بنفس البنية بالضبط من واجهة المستفيد (beneficiary_dashboard.html)، ومستقل تمامًا عن كارد تفاصيل المنحة.
+يعتمد على نفس أسماء الحالة والدوال بمكوّن Alpine لكل صفحة: grant, itemsModalOpen, savingItems, itemsSavedFlash,
+deletedItemIds, closeModal(), addItemToGrant(), removeItemFromGrant(idx), handleItemFileChange(e, it),
+saveItemsCard(), csrfToken().
+{% endcomment %}
+<div x-show="itemsModalOpen" x-cloak class="fixed inset-0 z-[60] flex items-start justify-center bg-black/50 backdrop-blur-sm overflow-y-auto py-8 px-4">
+  <template x-if="itemsModalOpen && grant">
+  <div class="bg-white w-full max-w-2xl rounded-[16px] shadow-[0px_20px_24px_-4px_rgba(16,24,40,0.10),0px_8px_8px_-4px_rgba(16,24,40,0.04)]" dir="rtl" style="font-family: 'IBM Plex Sans Arabic', sans-serif;">
+    <div class="flex items-center justify-between px-6 py-4 border-b border-[#E5E7EB]">
+      <div><h2 class="text-base font-bold text-[#161616]">تفاصيل الأصناف المستلمة</h2><p class="text-xs text-[#4d5761] mt-0.5" x-text="grant.title"></p></div>
+      <button @click="itemsModalOpen = false" type="button" class="inline-flex w-8 h-8 items-center justify-center rounded border border-[#d2d6db] text-[#161616] hover:bg-[#F3F4F6] transition-colors">✕</button>
+    </div>
+    <div class="px-6 py-6">
+      <form @submit.prevent="saveItemsCard()">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
+          <template x-for="(it, idx) in (grant.items || [])" :key="it.uid">
+            <div class="bg-white border border-[#d2d6db] rounded-[12px] p-4 flex flex-col gap-3">
+              <div class="flex items-center justify-between gap-2">
+                <div class="flex items-center gap-2 flex-1 min-w-0">
+                  <span class="flex-shrink-0 w-5 h-5 flex items-center justify-center rounded-full bg-[#F3FCF6] text-[10px] font-bold text-[#1B8354]" x-text="idx + 1"></span>
+                  <input type="text" x-model="it.item_type" class="text-sm font-semibold text-[#161616] flex-1 min-w-0 bg-transparent border-0 border-b border-dashed border-[#d2d6db] focus:outline-none focus:border-[#1B8354] px-0 py-0.5">
+                </div>
+
+                <div class="relative flex-shrink-0" x-data="{ openCond: false }">
+                  <button type="button" @click="openCond = !openCond"
+                          class="appearance-none text-center text-xs font-medium rounded-full ps-2.5 pe-6 py-1 border cursor-pointer focus:outline-none flex items-center"
+                          :class="it.condition === 'new' ? 'bg-[#F3FCF6] text-[#067647] border-[#88D8AD]' : 'bg-red-50 text-red-700 border-red-200'">
+                    <span x-text="it.condition === 'new' ? 'جيد' : 'تالف'"></span>
+                  </button>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="absolute end-2 top-1/2 -translate-y-1/2 pointer-events-none" :class="it.condition === 'new' ? 'text-[#067647]' : 'text-red-700'"><path d="m6 9 6 6 6-6"/></svg>
+                  <div x-show="openCond" x-cloak @click.outside="openCond = false" x-transition
+                       class="absolute z-10 mt-1 end-0 bg-white border border-[#d2d6db] rounded-lg shadow-lg overflow-hidden min-w-[64px]">
+                    <button type="button" @click="it.condition = 'new'; openCond = false" class="w-full text-center px-3 py-1.5 text-xs font-medium hover:bg-[#F3FCF6] transition-colors block" style="color:#067647;">جيد</button>
+                    <button type="button" @click="it.condition = 'damaged'; openCond = false" class="w-full text-center px-3 py-1.5 text-xs font-medium hover:bg-red-50 transition-colors block" style="color:#b91c1c;">تالف</button>
+                  </div>
+                </div>
+
+                <button type="button" @click="removeItemFromGrant(idx)" class="w-7 h-7 flex items-center justify-center rounded-full border border-red-200 text-red-400 hover:border-red-400 hover:text-red-600 hover:bg-red-50 transition-all flex-shrink-0">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                </button>
+              </div>
+
+              <div class="grid grid-cols-2 gap-2">
+                <div class="flex flex-col gap-1">
+                  <label class="text-[10px] text-[#9DA4AE] font-medium">المبنى</label>
+                  <input type="text" x-model="it.building" class="w-full bg-white border border-[#d2d6db] rounded-lg px-3 py-1.5 text-sm text-[#161616] focus:outline-none focus:border-[#1B8354] focus:ring-1 focus:ring-[#1B8354]/20 transition-all">
+                </div>
+                <div class="flex flex-col gap-1">
+                  <label class="text-[10px] text-[#9DA4AE] font-medium">الدور</label>
+                  <input type="text" x-model="it.floor" class="w-full bg-white border border-[#d2d6db] rounded-lg px-3 py-1.5 text-sm text-[#161616] focus:outline-none focus:border-[#1B8354] focus:ring-1 focus:ring-[#1B8354]/20 transition-all">
+                </div>
+                <div class="flex flex-col gap-1">
+                  <label class="text-[10px] text-[#9DA4AE] font-medium">الغرفة/المعمل</label>
+                  <input type="text" x-model="it.room" class="w-full bg-white border border-[#d2d6db] rounded-lg px-3 py-1.5 text-sm text-[#161616] focus:outline-none focus:border-[#1B8354] focus:ring-1 focus:ring-[#1B8354]/20 transition-all">
+                </div>
+                <div class="flex flex-col gap-1">
+                  <label class="text-[10px] text-[#9DA4AE] font-medium">الموديل</label>
+                  <input type="text" x-model="it.model" class="w-full bg-white border border-[#d2d6db] rounded-lg px-3 py-1.5 text-sm text-[#161616] focus:outline-none focus:border-[#1B8354] focus:ring-1 focus:ring-[#1B8354]/20 transition-all">
+                </div>
+                <div class="flex flex-col gap-1">
+                  <label class="text-[10px] text-[#9DA4AE] font-medium">الرقم التسلسلي</label>
+                  <input type="text" x-model="it.serial_number" class="w-full bg-white border border-[#d2d6db] rounded-lg px-3 py-1.5 text-sm text-[#161616] focus:outline-none focus:border-[#1B8354] focus:ring-1 focus:ring-[#1B8354]/20 transition-all">
+                </div>
+              </div>
+
+              <div class="border-t border-[#E5E7EB] pt-3 flex flex-col gap-2">
+                <label class="text-[10px] text-[#9DA4AE] font-medium">المرفق</label>
+                <template x-if="it.attachment_name">
+                  <div class="flex items-center gap-2 bg-[#F3FCF6] border border-[#88D8AD]/50 rounded-lg px-3 py-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1B8354" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="flex-shrink-0"><path d="m16 6-8.414 8.586a2 2 0 0 0 2.829 2.829l8.414-8.586a4 4 0 1 0-5.657-5.657l-8.379 8.551a6 6 0 1 0 8.485 8.485l8.379-8.551"/></svg>
+                    <span class="text-xs text-[#14573a] flex-1 truncate" x-text="it.attachment_name"></span>
+                    <a :href="it.attachment_url" target="_blank" rel="noreferrer" class="text-[#1B8354] hover:text-[#14573a] flex-shrink-0">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg>
+                    </a>
+                    <button type="button" @click="it.attachment_name = ''; it.attachment_url = ''; it.clear_attachment = true" class="text-red-400 hover:text-red-600 flex-shrink-0">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                    </button>
+                  </div>
+                </template>
+                <template x-if="!it.attachment_name">
+                  <label class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-dashed border-[#d2d6db] text-xs text-[#4d5761] hover:border-[#1B8354] hover:text-[#1B8354] transition-colors cursor-pointer w-fit">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m17 8-5-5-5 5"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/></svg>
+                    إضافة مرفق
+                    <input type="file" @change="handleItemFileChange($event, it)" class="hidden">
+                  </label>
+                </template>
+              </div>
+            </div>
+          </template>
+        </div>
+
+        <div class="mb-4">
+          <button type="button" @click="addItemToGrant()" :disabled="grant.itemsLimit !== null && (grant.items || []).length >= grant.itemsLimit"
+                  class="w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-[12px] border border-dashed text-sm font-medium transition-all"
+                  :class="(grant.itemsLimit !== null && (grant.items || []).length >= grant.itemsLimit) ? 'border-[#d2d6db] text-[#9DA4AE] cursor-not-allowed' : 'border-[#88D8AD] text-[#1B8354] hover:bg-[#F3FCF6] hover:border-[#1B8354]'">
+            <span class="text-lg leading-none">+</span> إضافة صنف جديد
+          </button>
+          <p x-show="grant.itemsLimit !== null && (grant.items || []).length >= grant.itemsLimit" x-cloak class="text-xs text-red-500 mt-1.5 text-center">تم الوصول للعدد المسموح به <template x-if="grant.itemsLimit"><span x-text="'(' + grant.itemsLimit + ' صنف)'"></span></template></p>
+        </div>
+
+        <div class="flex items-center gap-3 flex-wrap">
+          <button type="submit" :disabled="savingItems" class="inline-flex py-2 items-center justify-center rounded border border-[#1B8354] px-5 text-sm font-medium bg-[#1B8354] text-white hover:bg-[#166A45] transition-colors gap-2 disabled:opacity-60">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/><path d="M7 3v4a1 1 0 0 0 1 1h7"/></svg>
+            <span x-text="savingItems ? 'جارٍ الحفظ...' : 'حفظ التعديلات'"></span>
+          </button>
+          <span x-show="itemsSavedFlash" x-cloak x-transition class="flex items-center gap-1.5 text-sm text-[#067647]">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+            تم الحفظ بنجاح
+          </span>
+        </div>
+      </form>
+    </div>
+  </div>
+  </template>
+</div>

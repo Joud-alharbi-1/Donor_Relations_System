@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}قبول المنح{% endblock %}
+
+{% block content %}
+<div x-data="{ tab: 'journey' }">
+
+  {# العنوان #}
+  <div class="flex flex-col gap-4 px-4 md:px-8 py-6 bg-[#F7FDF9]">
+    <h1 class="font-bold text-3xl md:text-4xl text-[#063e27]">قبول المنح</h1>
+  </div>
+
+  {# شريط التبويبات — ثابت أسفل الهيدر (top:72px) #}
+  <div class="bg-white border-b border-gray-200 sticky top-[72px] z-30">
+    <div class="flex items-center justify-center px-6 py-4">
+      <div class="inline-flex items-center p-1 rounded-xl" style="background:#f3f4f6;">
+
+        <button type="button" @click="tab = 'journey'; window.scrollTo({top:0, behavior:'instant'})"
+                class="flex items-center px-10 py-3 rounded-[9px] text-base font-semibold whitespace-nowrap transition-all duration-200"
+                :style="tab === 'journey' ? 'background:#074d31; color:#ffffff; box-shadow:0 1px 6px rgba(0,0,0,0.18);' : 'background:transparent; color:#4b5563;'">
+          رحلة المانح
+        </button>
+
+        <button type="button" @click="tab = 'categories'; window.scrollTo({top:0, behavior:'instant'})"
+                class="flex items-center px-10 py-3 rounded-[9px] text-base font-semibold whitespace-nowrap transition-all duration-200"
+                :style="tab === 'categories' ? 'background:#074d31; color:#ffffff; box-shadow:0 1px 6px rgba(0,0,0,0.18);' : 'background:transparent; color:#4b5563;'">
+          فئات ومزايا المانحين
+        </button>
+
+        <button type="button" @click="tab = 'submit'; window.scrollTo({top:0, behavior:'instant'})"
+                class="flex items-center px-10 py-3 rounded-[9px] text-base font-semibold whitespace-nowrap transition-all duration-200"
+                :style="tab === 'submit' ? 'background:#074d31; color:#ffffff; box-shadow:0 1px 6px rgba(0,0,0,0.18);' : 'background:transparent; color:#4b5563;'">
+          تقديم منحة
+        </button>
+
+      </div>
+    </div>
+  </div>
+
+  {# محتوى التبويبات — الثلاثة موجودة بالصفحة وتتبدّل بـ x-show (تحافظ على حالة كل تبويب) #}
+  <div x-show="tab === 'journey'">
+    {% include "partials/donor_journey.html" %}
+  </div>
+  <div x-show="tab === 'categories'">
+    {% include "partials/donor_categories.html" %}
+  </div>
+  <div x-show="tab === 'submit'">
+    {% include "partials/submit_grant.html" %}
+  </div>
+
+</div>
+{% endblock %}

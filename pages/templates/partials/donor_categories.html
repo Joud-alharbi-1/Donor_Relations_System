@@ -1,0 +1,136 @@
+{# تبويب: فئات ومزايا المانحين — تفاعل عبر Alpine (اختيار فئة يبدّل قائمة المزايا) #}
+<section class="py-12 bg-white"
+         x-data="donorCategories()">
+  <div class="max-w-5xl mx-auto px-6 flex flex-col gap-12" dir="rtl">
+
+    {# قسم ١: قائمة الفئات #}
+    <div>
+      <div class="flex items-center gap-3 mb-6">
+        <div class="w-1 h-7 rounded-full bg-[#063e27]"></div>
+        <h2 class="text-xl font-bold text-[#063e27]">فئات المانحين</h2>
+      </div>
+
+      <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:12px; grid-auto-rows:1fr;">
+        <template x-for="(cat, i) in categories" :key="cat.name">
+          <div @click="active = i"
+               tabindex="0"
+               @keydown.enter="active = i" @keydown.space.prevent="active = i"
+               class="flex flex-col gap-1.5 px-3 py-3 rounded-xl border transition-all h-full cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1b8354]"
+               :style="active === i
+                 ? 'border-color:#063e27; border-width:2px; background-color:#f3fcf6; box-shadow:0 1px 6px rgba(0,0,0,0.10);'
+                 : 'border-color:#d2d6db; border-width:1px; background-color:white;'">
+            <div class="flex items-center gap-2">
+              <div class="w-2 h-2 rounded-full flex-shrink-0" :style="active === i ? 'background:#063e27' : 'background:#9ca3af'"></div>
+              <span class="font-bold text-lg leading-none" :style="active === i ? 'color:#063e27' : 'color:#4d5761'" x-text="cat.name"></span>
+            </div>
+            <p class="leading-relaxed text-gray-400" style="font-size:11px;" x-text="cat.value"></p>
+          </div>
+        </template>
+      </div>
+    </div>
+
+    {# قسم ٢: لوحة المزايا #}
+    <div>
+      <div class="flex items-center gap-3 mb-5">
+        <div class="w-1 h-7 rounded-full bg-[#063e27]"></div>
+        <h2 class="text-xl font-bold text-[#063e27]">مزايا الفئات</h2>
+      </div>
+
+      <div class="mt-4 rounded-2xl border border-gray-200 overflow-hidden">
+        {# رأس اللوحة #}
+        <div class="flex items-center justify-between px-5 py-3.5 bg-gray-50">
+          <div class="flex items-center gap-3">
+            <div>
+              <span class="font-bold text-base text-gray-800" x-text="categories[active].name"></span>
+              <span class="text-sm text-gray-400 me-2" x-text="' · ' + categories[active].value"></span>
+            </div>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="text-xs font-semibold text-[#2e7d32]" x-text="availableCount"></span>
+            <span class="text-xs text-gray-400">/ 19 ميزة متاحة</span>
+          </div>
+        </div>
+
+        {# قائمة المزايا #}
+        <div class="divide-y divide-gray-100 bg-white">
+          <template x-for="(b, i) in sortedBenefits" :key="b.label">
+            <div class="flex items-start gap-3 px-5 py-3 transition-colors"
+                 :class="b.ok ? 'hover:bg-[#f7fdf4]' : 'opacity-60'">
+              <div class="flex-shrink-0 mt-0.5">
+                <div x-show="b.ok" class="w-5 h-5 rounded-full flex items-center justify-center bg-gray-100">
+                  <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
+                    <path d="M2 6l3 3 5-5" stroke="#6b7280" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </div>
+                <div x-show="!b.ok" class="w-5 h-5 rounded-full flex items-center justify-center bg-gray-100">
+                  <svg width="9" height="9" viewBox="0 0 10 10" fill="none">
+                    <path d="M2.5 2.5l5 5M7.5 2.5l-5 5" stroke="#d1d5db" stroke-width="1.5" stroke-linecap="round"/>
+                  </svg>
+                </div>
+              </div>
+              <span class="text-sm leading-relaxed" :class="b.ok ? 'text-gray-700' : 'text-gray-400'" x-text="b.label"></span>
+            </div>
+          </template>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<script>
+function donorCategories() {
+  return {
+    active: 0,
+    categories: [
+      { name: "البلاتينية",     value: "المانحون بمبلغ عشرة ملايين ريال فأكثر" },
+      { name: "الألماسية",      value: "المانحون بمبلغ خمسة ملايين ريال وأقل من عشرة ملايين ريال" },
+      { name: "الذهبية",        value: "المانحون بمبلغ مليوني ريال وأقل من خمسة ملايين ريال" },
+      { name: "الفضية",         value: "المانحون بمبلغ مليون ريال وأقل من مليوني ريال" },
+      { name: "البرونزية",      value: "المانحون بمبلغ مئة ألف ريال وأقل من مليون ريال" },
+      { name: "الدرجة الأولى",  value: "المانحون بمبلغ خمسين ألف ريال وأقل من مئة ألف ريال" },
+      { name: "الدرجة الثانية", value: "المانحون بمبلغ خمسة وعشرون ألف ريال وأقل من خمسين ألف ريال" },
+      { name: "الدرجة الثالثة", value: "المانحون بمبلغ أقل من خمسة وعشرون ألف ريال" },
+    ],
+    benefitLabels: [
+      "عرض صور المانحين واقتباساتهم في الإعلانات على مواقع التواصل الاجتماعي",
+      "السماح للمانح باستخدام أحد مرافق الجامعة كمسرح أو قاعة اجتماعات",
+      "دعوة المانح للفعاليات المقامة في الجامعة والمتعلقة باهتماماته",
+      "إضافة اسم المانح في المطبوعات الخاصة بالفعاليات المتعلقة باهتماماته",
+      "وضع لافتة تعرف بالمانح في الفعاليات",
+      "توجيه الشكر للمانح أثناء الفعاليات المتعلقة باهتماماته من خلال الفعالية أو الشاشات",
+      "إضافة شعارات المانحين في موقع الجامعة",
+      "السماح للمانح بالمشاركة بفيديو مسجل يعرض في الفعاليات المقامة في الجامعة والمتعلقة باهتماماته",
+      "شكر المانح من خلال مواقع التواصل الاجتماعي الخاصة بالجامعة ودعوته كضيف",
+      "إمكانية تسمية المنحة باسم المانح لمدة محددة بناءً على معايير التسمية",
+      "كتابة خبر مخصص عن المنحة في مواقع التواصل الاجتماعي",
+      "تنظيم استضافات وزيارات مخصصة للمانح لمتابعة تطور المنحة",
+      "شكر المانح من خلال مواقع التواصل الاجتماعي الخاصة بالجامعة وإضافة أحد المستفيدين من المنحة",
+      "تقديم دعوة لحضور الحفل السنوي للمانحين",
+      "إضافة شعارات المانحين في موقع الإدارة",
+      "كتابة خبر مخصص عن المنحة في موقع الإدارة",
+      "إعطاء الفرصة للمانح بالمساهمة في تحقيق الأثر الاجتماعي والإنساني",
+      "تقديم تقارير دورية عن أثر المنحة للمانح",
+      "استدامة التواصل مع المانح من خلال ضابط اتصال",
+    ],
+    // true = ✓ لهذه الفئة — checks[catIndex][benefitIndex]
+    checks: [
+      Array(19).fill(true),
+      [...Array(4).fill(false), ...Array(15).fill(true)],
+      [...Array(8).fill(false), ...Array(11).fill(true)],
+      [...Array(11).fill(false), ...Array(8).fill(true)],
+      [...Array(14).fill(false), ...Array(5).fill(true)],
+      [...Array(16).fill(false), ...Array(3).fill(true)],
+      [...Array(17).fill(false), ...Array(2).fill(true)],
+      [...Array(18).fill(false), true],
+    ],
+    get availableCount() {
+      return this.checks[this.active].filter(Boolean).length;
+    },
+    get sortedBenefits() {
+      const list = this.benefitLabels.map((label, i) => ({ label, ok: this.checks[this.active][i] }));
+      return list.sort((a, b) => (b.ok ? 1 : 0) - (a.ok ? 1 : 0));
+    },
+  };
+}
+</script>

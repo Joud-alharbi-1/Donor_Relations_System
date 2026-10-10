@@ -1,0 +1,101 @@
+{# تبويب: رحلة المانح — ثابت بالكامل، بدون Alpine #}
+<div dir="rtl" class="w-full bg-white px-4 pt-6 pb-16">
+  <div class="max-w-7xl mx-auto">
+
+    {# الدائرة — ديسكتوب #}
+    <div class="hidden md:block mb-8">
+      <div class="relative w-full mx-auto" style="max-width:900px; aspect-ratio:900/580;">
+        <svg class="w-full h-full" viewBox="0 0 900 580" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <filter id="centerShadow" x="-40%" y="-40%" width="180%" height="180%">
+              <feDropShadow dx="0" dy="3" stdDeviation="10" flood-color="rgba(27,131,84,0.4)" />
+            </filter>
+            <radialGradient id="bgGrad" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="#eef6f1" />
+              <stop offset="100%" stop-color="#f0f2f5" stop-opacity="0" />
+            </radialGradient>
+          </defs>
+
+          <circle cx="450" cy="290" r="240" fill="url(#bgGrad)" />
+          <circle cx="450" cy="290" r="228" fill="none" stroke="#c5d5cc" stroke-width="0.5" />
+
+          <path d="M 467,91 A 200,200 0 0,1 614,175" fill="none" stroke="#B3DEC7" stroke-width="4" stroke-linecap="round" opacity="0.9" />
+          <path d="M 631,206 A 200,200 0 0,1 631,374" fill="none" stroke="#5AB379" stroke-width="4" stroke-linecap="round" opacity="0.9" />
+          <path d="M 614,405 A 200,200 0 0,1 467,489" fill="none" stroke="#31715F" stroke-width="4" stroke-linecap="round" opacity="0.9" />
+          <path d="M 433,489 A 200,200 0 0,1 286,405" fill="none" stroke="#6B7787" stroke-width="4" stroke-linecap="round" opacity="0.9" />
+          <path d="M 269,374 A 200,200 0 0,1 269,206" fill="none" stroke="#17343D" stroke-width="4" stroke-linecap="round" opacity="0.9" />
+          <path d="M 286,175 A 200,200 0 0,1 433,91"  fill="none" stroke="#D7CF60" stroke-width="4" stroke-linecap="round" opacity="0.9" />
+
+          <circle cx="450" cy="290" r="200" fill="none" stroke="rgba(0,0,0,0.05)" stroke-width="1" />
+
+          <line x1="450" y1="290" x2="563" y2="117" stroke="#c8d8d0" stroke-width="0.8" />
+          <line x1="450" y1="290" x2="650" y2="290" stroke="#c8d8d0" stroke-width="0.8" />
+          <line x1="450" y1="290" x2="563" y2="463" stroke="#c8d8d0" stroke-width="0.8" />
+          <line x1="450" y1="290" x2="337" y2="463" stroke="#c8d8d0" stroke-width="0.8" />
+          <line x1="450" y1="290" x2="250" y2="290" stroke="#c8d8d0" stroke-width="0.8" />
+          <line x1="450" y1="290" x2="337" y2="117" stroke="#c8d8d0" stroke-width="0.8" />
+
+          <circle cx="450" cy="290" r="90" fill="none" stroke="#1b8354" stroke-width="0.6" stroke-opacity="0.18" />
+          <circle cx="450" cy="290" r="80" fill="none" stroke="#1b8354" stroke-width="0.8" stroke-opacity="0.28" />
+          <circle cx="450" cy="290" r="72" fill="#1b8354" filter="url(#centerShadow)" />
+          <text x="450" y="297" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="24" font-weight="700" font-family="IBM Plex Sans Arabic, sans-serif">رحلة المانح</text>
+
+          {% for step in program_steps %}
+          <g>
+            <circle cx="{{ step.cx }}" cy="{{ step.cy }}" r="44" fill="{{ step.color }}" />
+            <text x="{{ step.cx }}" y="{{ step.cy|add:12 }}" text-anchor="middle" fill="white" font-size="34" font-weight="700" font-family="IBM Plex Sans Arabic, sans-serif">{{ forloop.counter }}</text>
+            <foreignObject x="{{ step.lx }}" y="{{ step.ly }}" width="{{ step.lw }}" height="{{ step.lh }}">
+              <div xmlns="http://www.w3.org/1999/xhtml" dir="rtl" style="font-family:'IBM Plex Sans Arabic',sans-serif; text-align:center;">
+                <p style="font-size:16px; font-weight:700; color:#1f2a37; margin-bottom:3px; line-height:1.3;">{{ step.title }}</p>
+                <p style="font-size:11px; color:#4d5761; line-height:1.35;">{{ step.desc }}</p>
+              </div>
+            </foreignObject>
+          </g>
+          {% endfor %}
+        </svg>
+      </div>
+    </div>
+
+    {# نسخة الموبايل #}
+    <div class="md:hidden grid grid-cols-2 gap-3 mb-8">
+      {% for step in program_steps %}
+      <div class="flex items-start gap-3 bg-white rounded-xl p-3 border" style="border-color:#d2d6db;">
+        <div class="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold shrink-0" style="background-color:{{ step.color }};">
+          {{ forloop.counter }}
+        </div>
+        <div>
+          <p class="text-xs font-bold mb-0.5" style="color:#1f2a37;">{{ step.title }}</p>
+          <p class="text-xs leading-relaxed" style="color:#4d5761;">{{ step.desc }}</p>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    {# بطاقة الكتيّب #}
+    <div class="mt-16 flex justify-center">
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-5 w-full max-w-2xl rounded-2xl px-7 py-5"
+           style="background-color:#f0f9f4; border:1px solid #d1ead9; box-shadow:0px 4px 8px -2px rgba(16,24,40,0.08), 0px 2px 4px -2px rgba(16,24,40,0.04);">
+        <div class="flex items-center gap-4">
+          <div class="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style="background-color:#d4ede0;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1b8354" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
+            </svg>
+          </div>
+          <div>
+            <p class="text-sm font-semibold" style="color:#1f2a37;">كتيّب رحلة المانح</p>
+            <p class="text-xs mt-0.5" style="color:#4d5761;">لمزيد من التفاصيل حول مراحل رحلة المانح</p>
+          </div>
+        </div>
+        <a href="https://online.fliphtml5.com/nlilb/algb/" target="_blank" rel="noopener noreferrer"
+           class="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-2xl text-sm font-medium transition-colors shrink-0 hover:bg-[#f7fdf9]"
+           style="color:#1b8354; background-color:white; box-shadow:0px 4px 8px -2px rgba(16,24,40,0.10), 0px 2px 4px -2px rgba(16,24,40,0.06); border:1px solid #e9edf0;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          تحميل الكتيّب
+        </a>
+      </div>
+    </div>
+
+  </div>
+</div>

@@ -1,0 +1,45 @@
+{% comment %}
+── كارد تحديد موقع الشعار داخل الدائرة (قص الشعار) — مشترك بين إضافة جهة مانحة وتعديل جهة مانحة ──
+يعتمد على نفس أسماء الحالة والدوال بمكوّن Alpine لكل صفحة:
+cropperOpen, cropperImgUrl, cropperZoom, cropperOffsetX, cropperOffsetY,
+openCropper(dataUrl), closeCropper(), cropperStartDrag(e), cropperDrag(e), cropperEndDrag(), confirmCrop().
+{% endcomment %}
+<div x-show="cropperOpen" x-cloak class="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+  <div x-show="cropperOpen" class="bg-white w-full max-w-sm rounded-[16px] shadow-[0px_20px_24px_-4px_rgba(16,24,40,0.10),0px_8px_8px_-4px_rgba(16,24,40,0.04)]" dir="rtl" style="font-family: 'IBM Plex Sans Arabic', sans-serif;">
+    <div class="flex items-center justify-between px-5 py-4 border-b border-[#E5E7EB]">
+      <h2 class="text-sm font-bold text-[#161616]">تحديد موقع الشعار</h2>
+      <button type="button" @click="closeCropper()" title="إغلاق" class="inline-flex w-7 h-7 items-center justify-center rounded border border-[#d2d6db] text-[#161616] hover:bg-[#F3F4F6] transition-colors">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path stroke-linecap="round" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+
+    <div class="px-5 py-5">
+      <p class="text-xs text-[#4d5761] mb-3">يمكن سحب الصورة لتحديد الجزء الذي سيظهر داخل الدائرة، واستخدام شريط التمرير للتكبير والتصغير.</p>
+
+      <div class="relative w-[280px] h-[280px] mx-auto rounded-lg overflow-hidden bg-[#F3F4F6] select-none touch-none"
+           style="cursor: grab;"
+           @mousedown="cropperStartDrag($event)"
+           @mousemove.window="cropperDrag($event)"
+           @mouseup.window="cropperEndDrag()"
+           @touchstart="cropperStartDrag($event)"
+           @touchmove.window.prevent="cropperDrag($event)"
+           @touchend.window="cropperEndDrag()">
+        <img :src="cropperImgUrl" draggable="false"
+             :style="`position:absolute; right:50%; top:50%; max-width:none; transform: translate(50%, -50%) translate(${cropperOffsetX}px, ${cropperOffsetY}px) scale(${cropperBaseScale * cropperZoom});`"
+             class="pointer-events-none" />
+        <div class="absolute inset-0 pointer-events-none" style="box-shadow: 0 0 0 9999px rgba(15,23,42,0.55); border-radius: 9999px; outline: 2px solid rgba(255,255,255,0.9);"></div>
+      </div>
+
+      <div class="flex items-center gap-3 mt-4">
+        <svg class="w-4 h-4 text-[#9DA4AE] flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        <input type="range" min="1" max="6" step="0.01" x-model.number="cropperZoom" class="flex-1 accent-[#1B8354]" />
+        <svg class="w-5 h-5 text-[#9DA4AE] flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+      </div>
+    </div>
+
+    <div class="flex items-center justify-end gap-2 px-5 py-4 border-t border-[#E5E7EB]">
+      <button type="button" @click="closeCropper()" class="inline-flex h-9 items-center px-4 rounded border border-[#d2d6db] text-sm text-[#4d5761] hover:bg-[#F3F4F6] transition-colors">إلغاء</button>
+      <button type="button" @click="confirmCrop()" class="inline-flex h-9 items-center px-4 rounded border border-[#1B8354] bg-[#1B8354] text-sm text-white hover:bg-[#166A45] transition-colors">استخدام الشعار</button>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,759 @@
+{% extends "admin_panel/base.html" %}
+{% block content %}
+{{ initial_grants|json_script:"initial-grants-data" }}
+{{ total_donors|json_script:"total-donors-data" }}
+{{ total_beneficiaries|json_script:"total-beneficiaries-data" }}
+{{ beneficiaries_list|json_script:"beneficiaries-list-data" }}
+{{ beneficiary_categories|json_script:"beneficiary-categories-data" }}
+
+<div dir="rtl" class="min-h-screen bg-[#f8f9fa]" style="font-family: 'IBM Plex Sans Arabic', sans-serif;"
+     x-data="dashboardPage()" x-init="init()">
+  <form id="save-grant-form" method="post" class="hidden">
+    {% csrf_token %}
+  </form>
+  {% if open_grant_id %}<div id="open-grant-flag" data-id="{{ open_grant_id }}" class="hidden"></div>{% endif %}
+  {% if open_report_grant_id %}<div id="open-report-flag" data-id="{{ open_report_grant_id }}" class="hidden"></div>{% endif %}
+  {% if open_items %}<div id="open-items-flag" class="hidden"></div>{% endif %}
+
+  <main class="max-w-screen-lg mx-auto px-4 sm:px-8 py-10">
+    <div class="mb-8">
+      <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+        <div>
+          <h1 class="text-[22px] font-bold text-[#161616]">{% if request.user.first_name %}أهلاً بك، {{ request.user.first_name }} 👋{% else %}أهلاً بك 👋{% endif %}</h1>
+          <p class="text-sm text-[#4d5761] mt-1">نظرة عامة على منظومة المنح والجهات في جامعة الملك عبدالعزيز</p>
+        </div>
+        <div class="flex items-center gap-2 flex-shrink-0">
+          <a href="{% url 'add_donor' %}"
+             class="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg border border-[#1B8354] bg-[#F3FCF6] text-sm font-medium text-[#1B8354] hover:bg-[#1B8354] hover:text-white transition-all">
+            <span class="text-base leading-none font-semibold">+</span>
+            إضافة جهة مانحة
+          </a>
+          <a href="{% url 'grant_management' %}"
+             class="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg bg-[#1B8354] text-sm font-medium text-white hover:bg-[#166A45] transition-all">
+            <span class="text-base leading-none font-semibold">+</span>
+            إضافة منحة
+          </a>
+        </div>
+      </div>
+    </div>
+
+    {# ── Stat cards ── #}
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+      <template x-for="s in stats" :key="s.label">
+        <div class="rounded-[16px] bg-white p-6 shadow-[0px_4px_8px_-2px_rgba(16,24,40,0.10),0px_2px_4px_-2px_rgba(16,24,40,0.06)] flex flex-col gap-4 relative overflow-hidden border border-[#1B8354]/30">
+          <span class="absolute top-0 right-0 left-0 h-[3px] rounded-t-[16px] bg-gradient-to-l from-[#1B8354] to-[#34d399]"></span>
+          <div class="flex w-[48px] h-[48px] items-center justify-center rounded-full bg-[#F3FCF6] flex-shrink-0 border border-[#D1FAE5]">
+            <span x-html="s.icon" class="w-5 h-5 text-[#1B8354]"></span>
+          </div>
+          <div>
+            <div class="text-[22px] font-extrabold text-[#14573a] leading-tight tracking-tight" x-text="s.value"></div>
+            <div class="text-xs text-[#4d5761] mt-1 leading-snug" x-text="s.label"></div>
+          </div>
+        </div>
+      </template>
+    </div>
+
+    {# ── Search grants ── #}
+    <div class="rounded-[16px] bg-white shadow-[0px_4px_8px_-2px_rgba(16,24,40,0.10),0px_2px_4px_-2px_rgba(16,24,40,0.06)]" style="overflow: clip;">
+      <div class="px-6 pt-5 pb-4 border-b border-[#E5E7EB]">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-base font-semibold text-[#161616]">ابحث عن منحة</h2>
+          <div class="inline-flex h-7 items-center gap-1 bg-[#f3fcf6] px-3 rounded-full">
+            <span class="text-sm font-medium text-[#14573a]"><span x-text="filteredGrants.length"></span> نتيجة</span>
+          </div>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <div class="relative flex-1">
+            <svg class="absolute top-1/2 -translate-y-1/2 right-3 w-4 h-4 text-[#9DA4AE] pointer-events-none" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path stroke-linecap="round" d="m21 21-4.3-4.3"/></svg>
+            <input type="text" x-model="query" placeholder="ابحث باسم المنحة أو الجهة المانحة أو المستفيدة…"
+                   class="w-full bg-[#F3F4F6] border border-[#E5E7EB] rounded-lg pr-9 pl-4 py-2 text-sm text-[#161616] placeholder:text-[#9DA4AE] focus:outline-none focus:border-[#1B8354] focus:ring-1 focus:ring-[#1B8354]/20 transition-all" />
+          </div>
+          <div class="relative flex-shrink-0">
+            <select x-model="typeFilter" class="h-9 bg-white border border-[#E5E7EB] rounded-lg pr-3 pl-8 text-sm text-[#161616] focus:outline-none focus:border-[#1B8354] focus:ring-1 focus:ring-[#1B8354]/20 transition-all cursor-pointer appearance-none">
+              <option value="الكل">الكل</option>
+              <option value="مالي">مالي</option>
+              <option value="عيني">عيني</option>
+            </select>
+            <svg class="absolute top-1/2 -translate-y-1/2 left-2.5 w-3.5 h-3.5 text-[#9DA4AE] pointer-events-none" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6"/></svg>
+          </div>
+          <div class="relative flex-shrink-0">
+            <select x-model="grantSort" class="h-9 bg-white border border-[#E5E7EB] rounded-lg pr-3 pl-8 text-sm text-[#161616] focus:outline-none focus:border-[#1B8354] focus:ring-1 focus:ring-[#1B8354]/20 transition-all cursor-pointer appearance-none">
+              <option value="date-desc">التاريخ: الأحدث أولاً</option>
+              <option value="date-asc">التاريخ: الأقدم أولاً</option>
+              <option value="amount-desc">المبلغ: الأعلى أولاً</option>
+              <option value="amount-asc">المبلغ: الأقل أولاً</option>
+            </select>
+            <svg class="absolute top-1/2 -translate-y-1/2 left-2.5 w-3.5 h-3.5 text-[#9DA4AE] pointer-events-none" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6"/></svg>
+          </div>
+
+          {# Date range picker — exact port of components/DateRangePicker.tsx #}
+          <div class="relative flex-shrink-0" @click.outside="dpOpen = false; dpHover = null">
+            <button
+              @click="dpToggleOpen()"
+              :class="dpOpen
+                ? 'h-9 inline-flex items-center gap-1.5 border rounded-xl px-3 text-sm whitespace-nowrap transition-all shadow-sm bg-white border-[#1B8354] ring-2 ring-[#1B8354]/15 text-[#1B8354]'
+                : (dpLabel() ? 'h-9 inline-flex items-center gap-1.5 border rounded-xl px-3 text-sm whitespace-nowrap transition-all shadow-sm bg-[#F3FCF6] border-[#1B8354]/40 text-[#14573a] font-medium' : 'h-9 inline-flex items-center gap-1.5 border rounded-xl px-3 text-sm whitespace-nowrap transition-all shadow-sm bg-white border-[#E5E7EB] text-[#9DA4AE] hover:border-[#d1d5db]')"
+            >
+              <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M8 2v4"/><path stroke-linecap="round" d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path stroke-linecap="round" d="M3 10h18"/><path stroke-linecap="round" d="M8 14h.01"/><path stroke-linecap="round" d="M12 14h.01"/><path stroke-linecap="round" d="M16 14h.01"/><path stroke-linecap="round" d="M8 18h.01"/><path stroke-linecap="round" d="M12 18h.01"/><path stroke-linecap="round" d="M16 18h.01"/></svg>
+              <span class="max-w-[160px] truncate" x-text="dpLabel() || 'اختر التاريخ'"></span>
+              <span
+                x-show="dpLabel()"
+                @click.stop="dpClear()"
+                class="mr-0.5 flex items-center justify-center w-5 h-5 rounded-full bg-[#14573a]/15 hover:bg-[#14573a]/30 text-[#14573a] transition-colors flex-shrink-0"
+              >
+                <svg class="w-3 h-3" stroke-width="2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" d="M6 18L18 6M6 6l12 12"/></svg>
+              </span>
+            </button>
+
+            <div
+              x-show="dpOpen"
+              x-cloak
+              class="absolute top-full mt-2 left-0 z-50 bg-white rounded-2xl border border-[#E5E7EB] shadow-[0px_12px_40px_-4px_rgba(16,24,40,0.18),0px_4px_12px_-4px_rgba(16,24,40,0.10)] p-4 select-none"
+              style="width: 292px;"
+              dir="ltr"
+            >
+              {# Quick year pick #}
+              <div class="flex items-center justify-between gap-2 mb-3 pb-3 border-b border-[#F3F4F6]" dir="rtl">
+                <span class="text-xs text-[#4d5761] whitespace-nowrap">أو اختر سنة كاملة</span>
+                <div class="relative flex-1">
+                  <select
+                    @change="dpPickYear($event)"
+                    class="w-full h-8 border border-[#d2d6db] rounded-lg pr-2 pl-7 text-xs text-[#161616] focus:outline-none focus:border-[#1B8354] focus:ring-1 focus:ring-[#1B8354]/20 bg-white appearance-none"
+                  >
+                    <option value="" selected disabled>اختر السنة</option>
+                    <template x-for="y in dpYearOptions" :key="y">
+                      <option :value="y" x-text="y"></option>
+                    </template>
+                  </select>
+                  <svg class="absolute top-1/2 -translate-y-1/2 left-2 w-3 h-3 text-[#9DA4AE] pointer-events-none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6"/></svg>
+                </div>
+              </div>
+
+              {# Month nav #}
+              <div class="flex items-center justify-between mb-3">
+                <button @click="dpPrevMonth()" class="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-[#F3F4F6] text-[#6B7280] transition-colors">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m15 18-6-6 6-6"/></svg>
+                </button>
+                <span class="text-sm font-semibold text-[#161616]" dir="rtl" x-text="dpMonthsAr[dpViewMonth] + ' ' + dpViewYear"></span>
+                <button @click="dpNextMonth()" class="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-[#F3F4F6] text-[#6B7280] transition-colors">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m9 18 6-6-6-6"/></svg>
+                </button>
+              </div>
+
+              {# Day labels #}
+              <div class="grid grid-cols-7 mb-1">
+                <template x-for="d in dpDaysAr" :key="d">
+                  <div class="text-center text-[10px] font-semibold text-[#9DA4AE] py-1" x-text="d"></div>
+                </template>
+              </div>
+
+              {# Day grid #}
+              <div class="grid grid-cols-7">
+                <template x-for="(cell, idx) in dpCells()" :key="idx">
+                  <div>
+                    <div x-show="!cell.iso" class="h-8"></div>
+                    <div
+                      x-show="cell.iso"
+                      @click="dpPickDay(cell.iso)"
+                      @mouseenter="dpStage === 'to' && (dpHover = cell.iso)"
+                      @mouseleave="dpStage === 'to' && (dpHover = null)"
+                      :class="`relative h-8 flex items-center justify-center cursor-pointer group ${dpInRange(cell.iso) ? 'bg-[#E8F8EF]' : ''}`"
+                    >
+                      <span x-show="dpIsFrom(cell.iso) && dpEffectiveTo()" class="absolute inset-y-0 left-1/2 right-0 bg-[#E8F8EF]"></span>
+                      <span x-show="dpIsTo(cell.iso) && dateFrom" class="absolute inset-y-0 left-0 right-1/2 bg-[#E8F8EF]"></span>
+                      <span x-show="dpIsEndpoint(cell.iso)" class="absolute inset-[3px] rounded-full bg-[#1B8354] shadow-sm"></span>
+                      <span x-show="!dpIsEndpoint(cell.iso) && !dpInRange(cell.iso)" class="absolute inset-[2px] rounded-lg bg-[#F3FCF6] opacity-0 group-hover:opacity-100 transition-opacity"></span>
+                      <span x-show="cell.iso === dpTodayISO && !dpIsEndpoint(cell.iso)" class="absolute bottom-[3px] left-1/2 -translate-x-1/2 w-[3px] h-[3px] rounded-full bg-[#1B8354]"></span>
+                      <span
+                        class="relative z-10 text-xs leading-none"
+                        :class="dpIsEndpoint(cell.iso) ? 'text-white font-bold' : (dpInRange(cell.iso) ? 'text-[#14573a] font-medium' : 'text-[#374151]')"
+                        x-text="cell.day"
+                      ></span>
+                    </div>
+                  </div>
+                </template>
+              </div>
+
+              {# Hint #}
+              <div class="mt-3 pt-2.5 border-t border-[#F3F4F6] text-center text-[10px] text-[#9DA4AE]" dir="rtl">
+                <span x-show="dpStage === 'from'">اضغط لاختيار تاريخ البداية</span>
+                <span x-show="dpStage !== 'from'" x-text="'اختر تاريخ النهاية' + (dateFrom ? ' · البداية: ' + dpFmt(dateFrom) : '')"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="min-height: 400px; max-height: 400px; overflow-y: auto;">
+        <template x-if="filteredGrants.length === 0">
+          <div class="flex items-center justify-center h-full" style="min-height: 400px;">
+            <p class="text-sm text-[#9DA4AE]">لا توجد نتائج مطابقة للبحث</p>
+          </div>
+        </template>
+        <table x-show="filteredGrants.length > 0" class="w-full text-sm">
+          <thead class="sticky top-0 z-10">
+            <tr class="bg-[#F3F4F6] border-b border-[#E5E7EB]">
+              <th class="text-right px-6 py-3 text-xs font-semibold text-[#4d5761] w-10">م</th>
+              <th class="text-right px-4 py-3 text-xs font-semibold text-[#4d5761]">المنحة</th>
+              <th class="text-right px-4 py-3 text-xs font-semibold text-[#4d5761] hidden sm:table-cell">الجهة المانحة</th>
+              <th class="text-right px-4 py-3 text-xs font-semibold text-[#4d5761] hidden sm:table-cell">الجهة المستفيدة</th>
+              <th class="text-right px-4 py-3 text-xs font-semibold text-[#4d5761]">النوع</th>
+              <th class="text-right px-4 py-3 text-xs font-semibold text-[#4d5761] hidden sm:table-cell">المبلغ</th>
+              <th class="text-right px-4 py-3 text-xs font-semibold text-[#4d5761] hidden sm:table-cell">تقرير الأثر</th>
+              <th class="text-right px-4 py-3 text-xs font-semibold text-[#4d5761]">تفاصيل المنحة</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-[#E5E7EB]">
+            <template x-for="(g, i) in filteredGrants" :key="g.id">
+              <tr class="hover:bg-[#F9FAFB] transition-colors group">
+                <td class="px-6 py-3.5 text-xs font-mono text-[#9DA4AE]" x-text="String(i + 1).padStart(2, '0')"></td>
+                <td class="px-4 py-3.5">
+                  <div class="font-semibold text-[#161616] leading-snug" x-text="g.title"></div>
+                  <div class="text-xs text-[#4d5761] mt-0.5" x-text="isoToDisplay(g.date)"></div>
+                </td>
+                <td class="px-4 py-3.5 text-[#1f2a37] hidden sm:table-cell text-sm" x-text="g.donor"></td>
+                <td class="px-4 py-3.5 text-[#1f2a37] hidden sm:table-cell text-sm" x-text="g.beneficiary"></td>
+                <td class="px-4 py-3.5">
+                  <span class="inline-flex h-7 items-center bg-[#f3fcf6] px-2.5 rounded-full text-xs font-medium text-[#14573a]" x-text="g.type"></span>
+                </td>
+                <td class="px-4 py-3.5 hidden sm:table-cell text-sm font-medium text-[#1f2a37] whitespace-nowrap" x-text="g.amount + ' ﷼'"></td>
+                <td class="px-4 py-3.5 hidden sm:table-cell">
+                  <button @click.stop="openReportCard(g.id)"
+                          :class="g.reports.length > 0 ? 'border-[#1B8354] text-[#1B8354] hover:bg-[#1B8354] hover:text-white' : 'border-[#d2d6db] text-[#4d5761] hover:border-[#1B8354] hover:text-[#1B8354]'"
+                          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all whitespace-nowrap">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
+                    <span x-text="g.reports.length > 0 ? 'عرض التقرير' : 'رفع تقرير'"></span>
+                  </button>
+                </td>
+                <td class="px-4 py-3.5">
+                  <button @click="openGrant(g.id)"
+                          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#1B8354] text-xs font-medium text-[#1B8354] hover:bg-[#1B8354] hover:text-white transition-all whitespace-nowrap">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>
+                    الذهاب للمنحة
+                  </button>
+                </td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  {% include "admin_panel/partials/_grant_detail_modal.html" %}
+
+  {% include "admin_panel/partials/_grant_items_modal.html" %}
+
+  {% include "admin_panel/partials/_report_card_modal.html" %}
+
+</div>
+
+<script>
+function dashboardPage() {
+  return {
+    grants: [],
+    totalDonorsCount: 0,
+    totalBeneficiariesCount: 0,
+    beneficiariesList: [],
+    beneficiaryCategories: [],
+
+    query: '',
+    typeFilter: 'الكل',
+    grantSort: 'date-desc',
+    dateFrom: '',
+    dateTo: '',
+
+    selected: null,
+    reportSelected: null,
+    selectedReportIdx: 0,
+    reportFileName: '',
+    confirmingReportUpload: false,
+    uploadedReportId: null,
+    editMode: false,
+    snapshot: null,
+    saveFlash: false,
+    savingEdit: false,
+    newVisit: { date: '', purpose: '' },
+    newNews: { title: '', url: '' },
+    newAnn: { text: '', url: '' },
+    showAddVisit: false,
+    showAddNews: false,
+    showAddAnn: false,
+    deletedItemIds: [],
+    itemsModalOpen: false,
+    savingItems: false,
+    itemsSavedFlash: false,
+    savingCounts: false,
+    countsSavedFlash: false,
+
+    // ── date range picker state — exact port of components/DateRangePicker.tsx ──
+    dpOpen: false,
+    dpViewYear: new Date().getFullYear(),
+    dpViewMonth: new Date().getMonth(),
+    dpStage: 'from',
+    dpHover: null,
+    dpMonthsAr: ["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"],
+    dpDaysAr: ["أح","إث","ث","أر","خ","ج","س"],
+    dpTodayISO: '',
+
+    dpToISO(y, m, d) {
+      return `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    },
+    dpFmt(iso) {
+      return new Date(iso + 'T12:00:00').toLocaleDateString('ar-SA-u-ca-gregory', { day: 'numeric', month: 'short' });
+    },
+    dpLabel() {
+      if (!this.dateFrom) return null;
+      if (!this.dateTo) return this.dpFmt(this.dateFrom);
+      return `${this.dpFmt(this.dateFrom)} – ${this.dpFmt(this.dateTo)}`;
+    },
+    dpToggleOpen() {
+      if (!this.dpOpen) {
+        if (this.dateFrom) {
+          const d = new Date(this.dateFrom + 'T12:00:00');
+          this.dpViewYear = d.getFullYear();
+          this.dpViewMonth = d.getMonth();
+        } else {
+          const n = new Date();
+          this.dpViewYear = n.getFullYear();
+          this.dpViewMonth = n.getMonth();
+        }
+        this.dpStage = (this.dateFrom && !this.dateTo) ? 'to' : 'from';
+      }
+      this.dpOpen = !this.dpOpen;
+      this.dpHover = null;
+    },
+    dpPrevMonth() {
+      if (this.dpViewMonth === 0) { this.dpViewMonth = 11; this.dpViewYear -= 1; }
+      else this.dpViewMonth -= 1;
+    },
+    dpNextMonth() {
+      if (this.dpViewMonth === 11) { this.dpViewMonth = 0; this.dpViewYear += 1; }
+      else this.dpViewMonth += 1;
+    },
+    dpPickDay(iso) {
+      if (this.dpStage === 'from') {
+        this.dateFrom = iso; this.dateTo = '';
+        this.dpStage = 'to';
+        this.dpHover = null;
+      } else {
+        if (iso < this.dateFrom) {
+          this.dateFrom = iso; this.dateTo = '';
+          this.dpStage = 'to';
+        } else if (iso === this.dateFrom) {
+          this.dateFrom = ''; this.dateTo = '';
+          this.dpStage = 'from';
+        } else {
+          this.dateTo = iso;
+          this.dpOpen = false;
+          this.dpStage = 'from';
+          this.dpHover = null;
+        }
+      }
+    },
+    dpClear() {
+      this.dateFrom = ''; this.dateTo = '';
+      this.dpStage = 'from';
+    },
+    dpPickYear(e) {
+      const year = e.target.value;
+      if (!year) return;
+      this.dateFrom = `${year}-01-01`;
+      this.dateTo = `${year}-12-31`;
+      this.dpStage = 'from';
+      this.dpOpen = false;
+    },
+    get dpYearOptions() {
+      const currentYear = new Date().getFullYear();
+      return Array.from({ length: 11 }, (_, i) => currentYear + 1 - i);
+    },
+    dpEffectiveTo() {
+      return (this.dpStage === 'to' && this.dpHover && this.dateFrom && this.dpHover > this.dateFrom) ? this.dpHover : this.dateTo;
+    },
+    dpIsFrom(iso) { return iso === this.dateFrom; },
+    dpIsTo(iso) { return iso === this.dateTo; },
+    dpIsEndpoint(iso) { return this.dpIsFrom(iso) || this.dpIsTo(iso); },
+    dpInRange(iso) {
+      const effectiveTo = this.dpEffectiveTo();
+      return !!(this.dateFrom && effectiveTo && iso > this.dateFrom && iso < effectiveTo);
+    },
+    dpCells() {
+      const firstDow = new Date(this.dpViewYear, this.dpViewMonth, 1).getDay();
+      const daysInMo = new Date(this.dpViewYear, this.dpViewMonth + 1, 0).getDate();
+      const cells = [];
+      for (let i = 0; i < firstDow; i++) cells.push({ iso: null, day: null });
+      for (let d = 1; d <= daysInMo; d++) cells.push({ iso: this.dpToISO(this.dpViewYear, this.dpViewMonth, d), day: d });
+      while (cells.length % 7 !== 0) cells.push({ iso: null, day: null });
+      return cells;
+    },
+
+    init() {
+      this.grants = JSON.parse(document.getElementById('initial-grants-data').textContent);
+      this.totalDonorsCount = JSON.parse(document.getElementById('total-donors-data').textContent);
+      this.totalBeneficiariesCount = JSON.parse(document.getElementById('total-beneficiaries-data').textContent);
+      this.beneficiariesList = JSON.parse(document.getElementById('beneficiaries-list-data').textContent);
+      this.beneficiaryCategories = JSON.parse(document.getElementById('beneficiary-categories-data').textContent);
+      const n = new Date();
+      this.dpTodayISO = this.dpToISO(n.getFullYear(), n.getMonth(), n.getDate());
+      const openFlag = document.getElementById('open-grant-flag');
+      if (openFlag) {
+        const id = parseInt(openFlag.dataset.id, 10);
+        if (!isNaN(id) && this.grants.some((g) => g.id === id)) {
+          this.openGrant(id);
+          if (new URLSearchParams(window.location.search).get('saved') === '1') {
+            this.saveFlash = true;
+            setTimeout(() => { this.saveFlash = false; }, 2500);
+          }
+          if (document.getElementById('open-items-flag')) {
+            this.itemsModalOpen = true;
+            if (new URLSearchParams(window.location.search).get('saved') === 'items') {
+              this.itemsSavedFlash = true;
+              setTimeout(() => { this.itemsSavedFlash = false; }, 2500);
+            }
+          }
+        }
+      }
+      const openReportFlag = document.getElementById('open-report-flag');
+      if (openReportFlag) {
+        const rid = parseInt(openReportFlag.dataset.id, 10);
+        if (!isNaN(rid) && this.grants.some((g) => g.id === rid)) {
+          this.openReportCard(rid);
+        }
+      }
+      const uploadedParam = new URLSearchParams(window.location.search).get('uploaded');
+      if (uploadedParam) {
+        this.uploadedReportId = parseInt(uploadedParam, 10);
+        setTimeout(() => { this.uploadedReportId = null; }, 30000);
+      }
+    },
+
+    isoToDisplay(iso) {
+      if (!iso) return '';
+      const [y, m, d] = iso.split('-');
+      return `${d}/${m}/${y}`;
+    },
+    decisionCombined(g) {
+      const parts = [];
+      if (g.decisionNumber) parts.push(`رقم ${g.decisionNumber}`);
+      if (g.decisionDate) parts.push(this.isoToDisplay(g.decisionDate));
+      if (g.type === 'عيني' && g.decisionQuantityCount) parts.push(`العدد ${g.decisionQuantityCount}`);
+      return parts.join('، ') || '—';
+    },
+    parseAmount(s) {
+      const n = parseInt(String(s).replace(/[^0-9]/g, ''), 10);
+      return isNaN(n) ? 0 : n;
+    },
+    csrfToken() {
+      return document.querySelector('#save-grant-form [name=csrfmiddlewaretoken]').value;
+    },
+    availableCategoriesForGrant() {
+      if (!this.grant) return [];
+      const used = new Set(this.grant.beneficiaries.map((b) => b.category));
+      return this.beneficiaryCategories.filter((c) => !used.has(c[0]));
+    },
+    categoryOptionsFor(idx) {
+      const current = this.grant.beneficiaries[idx].category;
+      return this.beneficiaryCategories.filter((c) => c[0] === current || !this.grant.beneficiaries.some((b, i) => i !== idx && b.category === c[0]));
+    },
+    addBeneficiaryCategory() {
+      if (!this.grant || this.availableCategoriesForGrant().length === 0) return;
+      this.grant.beneficiaries.push({ category: '', categoryLabel: '', count: 0, other_label: '' });
+    },
+    removeBeneficiaryCategory(idx) {
+      this.grant.beneficiaries.splice(idx, 1);
+    },
+    changeBeneficiaryCategory(idx, newValue) {
+      const opt = this.beneficiaryCategories.find((c) => c[0] === newValue);
+      const b = this.grant.beneficiaries[idx];
+      if (opt) { b.category = opt[0]; b.categoryLabel = opt[1]; }
+      if (newValue !== 'other') { b.other_label = ''; }
+    },
+    async saveCountsCard() {
+      if (!this.grant) return;
+      const g = this.grant;
+      const body = new FormData();
+      body.append('csrfmiddlewaretoken', this.csrfToken());
+      body.append('form_type', 'save_counts');
+      body.append('grant_id', g.id);
+      (g.beneficiaries || []).forEach((b) => {
+        body.append('category', b.category);
+        body.append('count_value', b.count);
+        body.append('other_label', b.other_label || '');
+      });
+
+      this.savingCounts = true;
+      try {
+        const res = await fetch(window.location.pathname, {
+          method: 'POST', body,
+          headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        });
+        if (!res.ok) throw new Error('save failed');
+        const data = await res.json();
+        const idx = this.grants.findIndex((x) => x.id === g.id);
+        if (idx !== -1) this.grants[idx].beneficiaries = data.beneficiaries;
+        this.savingCounts = false;
+        this.countsSavedFlash = true;
+        setTimeout(() => { this.countsSavedFlash = false; }, 2500);
+      } catch (e) {
+        this.savingCounts = false;
+        alert('تعذّر حفظ التعديلات، يُرجى المحاولة مرة أخرى');
+      }
+    },
+
+    get stats() {
+      const list = this.filteredGrants;
+      const donorCount = new Set(list.map((g) => g.donorId)).size;
+      const beneficiaryCount = new Set(list.map((g) => g.beneficiaryId)).size;
+      const grantsAmount = list.reduce((sum, g) => sum + this.parseAmount(g.amount), 0);
+      return [
+        { label: 'إجمالي الجهات المانحة', value: String(donorCount),
+          icon: '<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></svg>' },
+        { label: 'إجمالي الجهات المستفيدة', value: String(beneficiaryCount),
+          icon: '<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/></svg>' },
+        { label: 'إجمالي المنح', value: String(list.length),
+          icon: '<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>' },
+        { label: 'إجمالي قيمة المنح', value: grantsAmount.toLocaleString('en-US') + ' ﷼',
+          icon: '<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="18" x2="18" y1="20" y2="10"/><line x1="12" x2="12" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="14"/></svg>' },
+      ];
+    },
+
+    get filteredGrants() {
+      const q = this.query.trim().toLowerCase();
+      let list = this.grants.filter((g) => {
+        const matchText = !q || g.title.toLowerCase().includes(q) || g.donor.toLowerCase().includes(q) || g.beneficiary.toLowerCase().includes(q);
+        const matchType = this.typeFilter === 'الكل' || g.type === this.typeFilter;
+        const matchFrom = !this.dateFrom || (g.date && g.date >= this.dateFrom);
+        const matchTo = !this.dateTo || (g.date && g.date <= this.dateTo);
+        return matchText && matchType && matchFrom && matchTo;
+      });
+      list = list.slice().sort((a, b) => {
+        const pa = this.parseAmount(a.amount);
+        const pb = this.parseAmount(b.amount);
+        if (this.grantSort === 'amount-desc') return pb - pa;
+        if (this.grantSort === 'amount-asc') return pa - pb;
+        if (this.grantSort === 'date-asc') return (a.date || '').localeCompare(b.date || '');
+        return (b.date || '').localeCompare(a.date || '');
+      });
+      return list;
+    },
+
+    get grant() {
+      if (this.selected === null) return null;
+      return this.grants.find((g) => g.id === this.selected) || null;
+    },
+
+    get reportGrant() {
+      if (this.reportSelected === null) return null;
+      return this.grants.find((g) => g.id === this.reportSelected) || null;
+    },
+    get reportPreviewUrl() {
+      const r = this.reportGrant && this.reportGrant.reports[this.selectedReportIdx];
+      return r && r.url ? r.url + '#toolbar=0&navpanes=0&scrollbar=0' : '';
+    },
+    openReportCard(id) {
+      this.reportSelected = id;
+      const g = this.grants.find((x) => x.id === id);
+      this.selectedReportIdx = g && g.reports.length > 0 ? g.reports.length - 1 : 0;
+    },
+    closeReportCard() {
+      this.reportSelected = null;
+      this.reportFileName = '';
+      this.confirmingReportUpload = false;
+    },
+    cancelReportUpload() {
+      this.reportFileName = '';
+      this.confirmingReportUpload = false;
+      if (this.$refs.reportCardInput) this.$refs.reportCardInput.value = '';
+    },
+
+    resetAddForms() {
+      this.newVisit = { date: '', purpose: '' };
+      this.newNews = { title: '', url: '' };
+      this.newAnn = { text: '', url: '' };
+      this.showAddVisit = false;
+      this.showAddNews = false;
+      this.showAddAnn = false;
+    },
+    openGrant(id) {
+      this.selected = id;
+      this.selectedReportIdx = 0;
+      this.editMode = false;
+      this.snapshot = null;
+      this.saveFlash = false;
+      this.resetAddForms();
+    },
+    closeModal() {
+      this.selected = null;
+      this.editMode = false;
+      this.snapshot = null;
+      this.deletedItemIds = [];
+      this.itemsModalOpen = false;
+      this.itemsSavedFlash = false;
+      this.countsSavedFlash = false;
+      this.resetAddForms();
+    },
+    enterEdit() {
+      if (!this.grant) return;
+      this.snapshot = JSON.parse(JSON.stringify(this.grant));
+      this.editMode = true;
+      this.saveFlash = false;
+      this.deletedItemIds = [];
+      this.resetAddForms();
+    },
+    cancelEdit() {
+      if (this.snapshot) {
+        const idx = this.grants.findIndex((g) => g.id === this.snapshot.id);
+        if (idx !== -1) this.grants[idx] = JSON.parse(JSON.stringify(this.snapshot));
+      }
+      this.editMode = false;
+      this.snapshot = null;
+      this.deletedItemIds = [];
+      this.resetAddForms();
+    },
+    addItemToGrant() {
+      if (!this.grant) return;
+      if (this.grant.itemsLimit !== null && this.grant.items.length >= this.grant.itemsLimit) return;
+      this.grant.items.push({
+        uid: 'new_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+        id: null, item_type: 'صنف جديد', condition: 'new',
+        building: '', floor: '', room: '', model: '', serial_number: '',
+        attachment_name: '', attachment_url: '', _file: null, clear_attachment: false,
+      });
+    },
+    removeItemFromGrant(idx) {
+      const it = this.grant.items[idx];
+      if (it.id) this.deletedItemIds.push(it.id);
+      this.grant.items.splice(idx, 1);
+    },
+    handleItemFileChange(e, it) {
+      const file = e.target.files[0];
+      if (!file) return;
+      it._file = file;
+      it.attachment_name = file.name;
+      it.clear_attachment = false;
+    },
+    async saveEdit() {
+      if (!this.grant) return;
+      const g = this.grant;
+      const body = new FormData();
+      body.append('csrfmiddlewaretoken', this.csrfToken());
+      body.append('form_type', 'save_grant');
+      body.append('grant_id', g.id);
+      body.append('type', g.type);
+      body.append('date', g.date);
+      body.append('beneficiary_id', g.beneficiaryId);
+      body.append('decisionNumber', g.decisionNumber || '');
+      body.append('decisionDate', g.decisionDate || '');
+      body.append('decisionQuantityCount', g.decisionQuantityCount || '');
+      body.append('decisionQuantityType', g.decisionQuantityType || '');
+      body.append('amount', g.amount);
+      body.append('status', g.status);
+      body.append('visits_json', JSON.stringify(g.visits));
+      body.append('news_json', JSON.stringify(g.news));
+      body.append('announcements_json', JSON.stringify(g.announcements));
+
+      this.savingEdit = true;
+      try {
+        const res = await fetch(window.location.pathname, { method: 'POST', body });
+        if (!res.ok) throw new Error('save failed');
+        window.location.href = window.location.pathname + '?open=' + g.id + '&saved=1';
+      } catch (e) {
+        this.savingEdit = false;
+        alert('تعذّر حفظ التعديلات، يُرجى المحاولة مرة أخرى');
+      }
+    },
+    async saveItemsCard() {
+      if (!this.grant) return;
+      const g = this.grant;
+      const body = new FormData();
+      body.append('csrfmiddlewaretoken', this.csrfToken());
+      body.append('form_type', 'save_items');
+      body.append('grant_id', g.id);
+      body.append('items_json', JSON.stringify((g.items || []).map((it) => ({
+        id: it.id, uid: it.uid, item_type: it.item_type, condition: it.condition,
+        building: it.building, floor: it.floor, room: it.room, model: it.model,
+        serial_number: it.serial_number, clear_attachment: !!it.clear_attachment,
+      }))));
+      body.append('deleted_ids_json', JSON.stringify(this.deletedItemIds));
+      (g.items || []).forEach((it) => {
+        if (it._file instanceof File) body.append('file_' + it.uid, it._file);
+      });
+
+      this.savingItems = true;
+      try {
+        const res = await fetch(window.location.pathname, {
+          method: 'POST', body,
+          headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        });
+        if (!res.ok) throw new Error('save failed');
+        const data = await res.json();
+        const idx = this.grants.findIndex((x) => x.id === g.id);
+        if (idx !== -1) {
+          this.grants[idx].items = data.items;
+          this.grants[idx].itemsLimit = data.itemsLimit;
+        }
+        this.deletedItemIds = [];
+        this.savingItems = false;
+        this.itemsSavedFlash = true;
+        setTimeout(() => { this.itemsSavedFlash = false; }, 2500);
+      } catch (e) {
+        this.savingItems = false;
+        alert('تعذّر حفظ الأصناف، يُرجى المحاولة مرة أخرى');
+      }
+    },
+    addVisit() {
+      if (!this.newVisit.date || !this.newVisit.purpose.trim()) return;
+      this.grant.visits.push({ ...this.newVisit });
+      this.newVisit = { date: '', purpose: '' };
+      this.showAddVisit = false;
+    },
+    addNews() {
+      if (!this.newNews.title.trim() || !this.newNews.url.trim()) return;
+      this.grant.news.push({ title: this.newNews.title.trim(), url: this.newNews.url.trim() });
+      this.newNews = { title: '', url: '' };
+      this.showAddNews = false;
+    },
+    addAnnouncement() {
+      if (!this.newAnn.text.trim() || !this.newAnn.url.trim()) return;
+      this.grant.announcements.push({ text: this.newAnn.text.trim(), url: this.newAnn.url.trim() });
+      this.newAnn = { text: '', url: '' };
+      this.showAddAnn = false;
+    },
+    async confirmReportUpload() {
+      const file = this.$refs.reportCardInput.files[0];
+      if (!file || !this.reportGrant) return;
+      const grantId = this.reportGrant.id;
+      const body = new FormData();
+      body.append('csrfmiddlewaretoken', this.csrfToken());
+      body.append('file', file);
+      body.append('next', window.location.pathname);
+      try {
+        const res = await fetch('{% url "upload_grant_report" grant_id=0 %}'.replace('/0/', '/' + grantId + '/'), { method: 'POST', body });
+        if (!res.ok) throw new Error('upload failed');
+        window.location.href = res.url;
+      } catch (err) {
+        this.confirmingReportUpload = false;
+        alert('تعذّر رفع التقرير، يُرجى المحاولة مرة أخرى');
+      }
+    },
+    async undoReportUpload() {
+      if (!this.uploadedReportId || !this.reportGrant) return;
+      const grantId = this.reportGrant.id;
+      const body = new FormData();
+      body.append('csrfmiddlewaretoken', this.csrfToken());
+      body.append('action', 'delete');
+      body.append('report_id', this.uploadedReportId);
+      body.append('next', window.location.pathname);
+      try {
+        const res = await fetch('{% url "upload_grant_report" grant_id=0 %}'.replace('/0/', '/' + grantId + '/'), { method: 'POST', body });
+        if (!res.ok) throw new Error('delete failed');
+        window.location.href = res.url;
+      } catch (err) {
+        alert('تعذّر التراجع عن الرفع، يُرجى المحاولة مرة أخرى');
+      }
+    },
+  };
+}
+
+</script>
+{% endblock %}

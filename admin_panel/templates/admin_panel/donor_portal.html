@@ -1,0 +1,823 @@
+{% extends "admin_panel/base.html" %}
+{% block content %}
+{{ donor_info|json_script:"donor-info-data" }}
+{{ category_styles|json_script:"portal-category-styles-data" }}
+{{ category_history|json_script:"category-history-data" }}
+{{ grants_data|json_script:"portal-grants-data" }}
+{{ total_beneficiaries|json_script:"total-beneficiaries-data" }}
+{{ beneficiaries_list|json_script:"beneficiaries-list-data" }}
+{{ beneficiary_categories|json_script:"beneficiary-categories-data" }}
+
+<div dir="rtl" class="min-h-screen bg-[#f8f9fa] text-[#1f2a37]" style="font-family: 'IBM Plex Sans Arabic', sans-serif;"
+     x-data="donorPortalPage()" x-init="init()">
+  <form id="save-donor-form" method="post" enctype="multipart/form-data" class="hidden">
+    {% csrf_token %}
+  </form>
+  {% if open_report_grant_id %}<div id="open-report-flag" data-id="{{ open_report_grant_id }}" class="hidden"></div>{% endif %}
+  {% if open_grant_id %}<div id="open-grant-flag" data-id="{{ open_grant_id }}" class="hidden"></div>{% endif %}
+  {% if open_items %}<div id="open-items-flag" class="hidden"></div>{% endif %}
+
+  <template x-if="!donor">
+    <div class="min-h-screen flex items-center justify-center">
+      <div class="text-center">
+        <p class="text-[#4d5761] text-sm mb-4">الجهة المانحة غير موجودة</p>
+        <a href="{% url 'donor_management' %}" class="text-[#1B8354] text-sm hover:underline">← العودة للقائمة</a>
+      </div>
+    </div>
+  </template>
+
+  <template x-if="donor">
+    <div>
+      <main class="max-w-screen-lg mx-auto px-4 sm:px-8 py-10">
+
+        <a href="{% url 'donor_management' %}" class="inline-flex items-center gap-1.5 text-sm text-[#4d5761] hover:text-[#1B8354] transition-colors mb-6">
+          <svg class="w-3.5 h-3.5" style="transform: rotate(180deg);" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+          الجهات المانحة
+        </a>
+
+        {# ── Donor identity card ── #}
+        <div class="rounded-[16px] bg-white p-6 shadow-[0px_4px_8px_-2px_rgba(16,24,40,0.10),0px_2px_4px_-2px_rgba(16,24,40,0.06)] mb-8">
+          <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-5">
+            <div class="flex items-center gap-4">
+              <div class="flex w-[56px] h-[56px] items-center justify-center rounded-full bg-[#F3FCF6] flex-shrink-0 overflow-hidden">
+                <template x-if="donorEditMode ? editDonorLogo : displayLogo">
+                  <img :src="donorEditMode ? editDonorLogo : displayLogo" :alt="displayName" class="w-full h-full object-cover" />
+                </template>
+                <template x-if="!(donorEditMode ? editDonorLogo : displayLogo)">
+                  <span class="text-2xl font-bold text-[#1B8354]" x-text="displayName.charAt(0)"></span>
+                </template>
+              </div>
+              <div class="flex-1">
+                <template x-if="donorEditMode">
+                  <div class="flex flex-col gap-2">
+                    <input type="text" x-model="editDonorName" placeholder="اسم الجهة"
+                           class="w-full bg-white border border-[#d2d6db] rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-[#1B8354] focus:ring-1 focus:ring-[#1B8354]/20 transition-all font-bold text-[16px]" />
+                    <input x-ref="donorLogoInput" type="file" accept="image/*" class="hidden" @change="handleDonorLogoChange($event)" />
+                    <button type="button" @click="$refs.donorLogoInput.click()" class="flex items-center gap-1.5 text-xs font-medium text-[#1B8354] hover:text-[#14573a] transition-colors w-fit">
+                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+                      تغيير الشعار
+                    </button>
+                  </div>
+                </template>
+                <template x-if="!donorEditMode">
+                  <div>
+                    <h1 class="text-[20px] font-bold text-[#161616] leading-7" x-text="displayName"></h1>
+                    <p class="text-sm text-[#4d5761] mt-0.5">الجهة المانحة</p>
+                  </div>
+                </template>
+              </div>
+            </div>
+
+            <div class="relative self-start" @click.outside="showCategoryHistory = false">
+              <div class="flex items-center gap-1.5">
+                <button @click="showCategoryHistory = !showCategoryHistory" title="سجل الفئات حسب السنة"
+                        class="w-8 h-8 flex items-center justify-center rounded-full border transition-colors"
+                        :class="showCategoryHistory ? 'bg-[#F3FCF6] border-[#1B8354] text-[#1B8354]' : 'border-[#d2d6db] text-[#9DA4AE] hover:text-[#1B8354] hover:border-[#1B8354]'">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
+                </button>
+                <template x-if="donor.category">
+                  <span class="inline-flex items-center gap-1.5 px-3 h-8 rounded-full text-sm font-medium border"
+                        :class="[catStyle.bg, catStyle.text, catStyle.border]">
+                    <span class="w-1.5 h-1.5 rounded-full" :class="catStyle.dot"></span>
+                    <span x-text="donor.category"></span>
+                  </span>
+                </template>
+              </div>
+
+              <div x-show="showCategoryHistory" x-cloak
+                   class="absolute top-full mt-2 right-0 z-50 bg-white rounded-2xl border border-[#E5E7EB] shadow-[0px_12px_40px_-4px_rgba(16,24,40,0.18),0px_4px_12px_-4px_rgba(16,24,40,0.10)] p-4"
+                   style="width: 260px;">
+                <p class="text-[10px] font-semibold text-[#9DA4AE] uppercase tracking-wide mb-3">سجل الفئات حسب السنة</p>
+                <div x-show="categoryHistory.length > 0" class="space-y-1.5">
+                  <template x-for="e in categoryHistory" :key="e.year">
+                    <div class="flex items-center justify-between bg-[#F9FAFB] rounded-lg px-3 py-1.5">
+                      <span class="text-xs font-mono text-[#4d5761]" x-text="e.year"></span>
+                      <span class="text-xs font-medium" :class="(categoryStyles[e.category] || {}).text || 'text-[#161616]'" x-text="e.category"></span>
+                    </div>
+                  </template>
+                </div>
+                <p x-show="categoryHistory.length === 0" class="text-xs text-[#9DA4AE]">لا يوجد سجل فئات بعد</p>
+              </div>
+            </div>
+          </div>
+
+          <template x-if="donorEditMode">
+            <div class="border-t border-[#E5E7EB] pt-4">
+              <div class="flex items-center justify-between mb-3">
+                <p class="text-[14px] font-semibold text-[#9DA4AE] uppercase tracking-wide">جهات التواصل</p>
+                <div class="flex items-center gap-2">
+                  <button @click="saveDonorEdit()" :disabled="savingDonor" class="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg bg-[#1B8354] text-white text-xs font-semibold hover:bg-[#14573a] transition-colors disabled:opacity-60">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/><path d="M7 3v4a1 1 0 0 0 1 1h7"/></svg>
+                    <span x-text="savingDonor ? 'جارٍ الحفظ...' : 'حفظ التعديلات'"></span>
+                  </button>
+                  <button @click="cancelDonorEdit()" :disabled="savingDonor" class="inline-flex items-center h-8 px-3 rounded-lg border border-[#d2d6db] text-xs font-medium text-[#4d5761] hover:bg-[#F3F4F6] transition-colors disabled:opacity-50">إلغاء</button>
+                </div>
+              </div>
+              <div class="space-y-4">
+                <template x-for="(c, i) in editContacts" :key="i">
+                  <div class="relative border border-[#E5E7EB] rounded-lg p-4">
+                    <button x-show="editContacts.length > 1" type="button" @click="removeEditContact(i)" class="absolute top-3 left-3 text-[#9DA4AE] hover:text-red-500 transition-colors">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path stroke-linecap="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                      <div>
+                        <label class="block text-xs font-medium text-[#4d5761] mb-1">الاسم</label>
+                        <input type="text" x-model="c.name" placeholder="مثال: ماجد بالخير" class="w-full bg-white border border-[#d2d6db] rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-[#1B8354] focus:ring-1 focus:ring-[#1B8354]/20 transition-all" />
+                      </div>
+                      <div>
+                        <label class="block text-xs font-medium text-[#4d5761] mb-1">المنصب</label>
+                        <input type="text" x-model="c.title" placeholder="مثال: مدير العلاقات العامة" class="w-full bg-white border border-[#d2d6db] rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-[#1B8354] focus:ring-1 focus:ring-[#1B8354]/20 transition-all" />
+                      </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                      <div>
+                        <label class="block text-xs font-medium text-[#4d5761] mb-1">البريد الإلكتروني</label>
+                        <input type="email" x-model="c.email" @input="c.email = $event.target.value.replace(/[^\x00-\x7F]/g, '')" placeholder="example@company.com" dir="ltr" class="w-full bg-white border border-[#d2d6db] rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-[#1B8354] focus:ring-1 focus:ring-[#1B8354]/20 transition-all" />
+                      </div>
+                      <div>
+                        <label class="block text-xs font-medium text-[#4d5761] mb-1">رقم التواصل</label>
+                        <input type="tel" inputmode="tel" x-model="c.phone" @input="c.phone = $event.target.value.replace(/[^0-9+\-\s()]/g, '')" placeholder="مثال: 0112345678" dir="ltr" class="w-full bg-white border border-[#d2d6db] rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-[#1B8354] focus:ring-1 focus:ring-[#1B8354]/20 transition-all" />
+                      </div>
+                    </div>
+                  </div>
+                </template>
+              </div>
+              <button type="button" @click="addEditContact()" class="mt-3 flex items-center gap-1.5 text-xs font-semibold text-[#1B8354] hover:text-[#14573a] transition-colors">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                إضافة جهة تواصل
+              </button>
+            </div>
+          </template>
+
+          <template x-if="!donorEditMode">
+            <div class="border-t border-[#E5E7EB] pt-4 space-y-4">
+              <div class="flex items-center justify-between">
+                <p class="text-[14px] font-semibold text-[#9DA4AE] uppercase tracking-wide">جهات التواصل</p>
+                <button @click="enterDonorEdit()" class="inline-flex items-center gap-1 h-6 px-2 rounded-lg border border-[#d2d6db] text-[11px] font-medium text-[#161616] hover:bg-[#F3F4F6] transition-colors">
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg>
+                  تعديل
+                </button>
+              </div>
+              <p x-show="displayContacts.length === 0" class="text-sm text-[#9DA4AE]">لا توجد جهات تواصل مسجلة</p>
+              <template x-for="(c, i) in displayContacts" :key="i">
+                <div x-show="c.name || c.title || c.email || c.phone" class="flex flex-wrap items-center gap-x-6 gap-y-2">
+                  <div x-show="c.name">
+                    <p class="text-[10px] text-[#9DA4AE]">الاسم</p>
+                    <p class="text-sm font-medium text-[#161616]" x-text="c.name || '—'"></p>
+                  </div>
+                  <div x-show="c.title">
+                    <p class="text-[10px] text-[#9DA4AE]">المنصب</p>
+                    <p class="text-sm font-medium text-[#161616]" x-text="c.title"></p>
+                  </div>
+                  <div x-show="c.phone">
+                    <p class="text-[10px] text-[#9DA4AE]">الهاتف</p>
+                    <p class="text-sm font-medium text-[#161616] font-mono" dir="ltr" x-text="c.phone"></p>
+                  </div>
+                  <div x-show="c.email">
+                    <p class="text-[10px] text-[#9DA4AE]">البريد الإلكتروني</p>
+                    <p class="text-sm font-medium text-[#161616]" dir="ltr" x-text="c.email"></p>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </template>
+        </div>
+
+        {# ── Stats ── #}
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-8">
+          <template x-for="s in stats" :key="s.label">
+            <div class="rounded-[16px] bg-white p-6 shadow-[0px_4px_8px_-2px_rgba(16,24,40,0.10),0px_2px_4px_-2px_rgba(16,24,40,0.06)] flex items-center gap-4">
+              <div class="flex w-[48px] h-[48px] items-center justify-center rounded-full bg-[#F3FCF6] flex-shrink-0">
+                <span x-html="s.icon" class="w-5 h-5 text-[#1B8354]"></span>
+              </div>
+              <div>
+                <div class="text-[18px] font-bold text-[#1B8354] leading-7" x-text="s.value"></div>
+                <div class="text-sm text-[#4d5761]" x-text="s.label"></div>
+              </div>
+            </div>
+          </template>
+        </div>
+
+        {# ── Grants table ── #}
+        <template x-if="grants.length === 0">
+          <div class="rounded-[16px] bg-white p-10 shadow-[0px_4px_8px_-2px_rgba(16,24,40,0.10),0px_2px_4px_-2px_rgba(16,24,40,0.06)] text-center text-sm text-[#4d5761]">
+            لا توجد منح مسجلة لهذه الجهة حتى الآن.
+          </div>
+        </template>
+        <template x-if="grants.length > 0">
+          <div class="rounded-[16px] bg-white shadow-[0px_4px_8px_-2px_rgba(16,24,40,0.10),0px_2px_4px_-2px_rgba(16,24,40,0.06)] overflow-hidden mb-8">
+            <div class="flex items-center justify-between gap-3 px-6 py-4 border-b border-[#E5E7EB]">
+              <h2 class="text-base font-semibold text-[#161616]">منح الجهة</h2>
+              <div class="flex items-center gap-2">
+                <div class="relative">
+                  <select x-model="grantSort" class="h-8 bg-white border border-[#E5E7EB] rounded-lg pr-2.5 pl-7 text-xs text-[#161616] focus:outline-none focus:border-[#1B8354] focus:ring-1 focus:ring-[#1B8354]/20 transition-all cursor-pointer appearance-none">
+                    <option value="" disabled>الترتيب</option>
+                    <option value="date-desc">التاريخ: الأحدث أولاً</option>
+                    <option value="date-asc">التاريخ: الأقدم أولاً</option>
+                    <option value="amount-desc">المبلغ: الأعلى أولاً</option>
+                    <option value="amount-asc">المبلغ: الأقل أولاً</option>
+                  </select>
+                  <svg class="absolute top-1/2 -translate-y-1/2 left-2 w-3 h-3 text-[#9DA4AE] pointer-events-none" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6"/></svg>
+                </div>
+                <div class="inline-flex h-8 items-center justify-center gap-1 bg-[#f3fcf6] px-3 rounded-full">
+                  <span class="text-sm font-medium text-[#14573a]"><span x-text="grants.length"></span> منح</span>
+                </div>
+              </div>
+            </div>
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="bg-[#F3F4F6] border-b border-[#E5E7EB]">
+                  <th class="text-right px-6 py-3 text-xs font-semibold text-[#4d5761] w-10">م</th>
+                  <th class="text-right px-4 py-3 text-xs font-semibold text-[#4d5761]">المنحة</th>
+                  <th class="text-right px-4 py-3 text-xs font-semibold text-[#4d5761]">نوع المنحة</th>
+                  <th class="text-right px-4 py-3 text-xs font-semibold text-[#4d5761]">الجهة المستفيدة</th>
+                  <th class="text-right px-4 py-3 text-xs font-semibold text-[#4d5761]">المبلغ</th>
+                  <th class="text-right px-4 py-3 text-xs font-semibold text-[#4d5761]">تقرير الأثر</th>
+                  <th class="text-right px-4 py-3 text-xs font-semibold text-[#4d5761] w-10">تفاصيل المنحة</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-[#E5E7EB]">
+                <template x-for="(g, i) in sortedGrants" :key="g.id">
+                  <tr @click="openGrant(g.id)" class="hover:bg-[#F3F4F6] transition-colors cursor-pointer group">
+                    <td class="px-6 py-4 text-xs font-mono text-[#9DA4AE]" x-text="String(i + 1).padStart(2, '0')"></td>
+                    <td class="px-4 py-4 font-semibold text-[#161616]">
+                      <div x-text="g.title"></div>
+                      <div class="text-xs text-[#4d5761] font-normal mt-0.5" x-text="isoToDisplay(g.date)"></div>
+                    </td>
+                    <td class="px-4 py-4">
+                      <div class="inline-flex h-8 items-center justify-center gap-1 bg-[#f3fcf6] px-3 rounded-full">
+                        <span class="text-sm font-medium text-[#14573a]" x-text="g.type"></span>
+                      </div>
+                    </td>
+                    <td class="px-4 py-4">
+                      <div class="flex items-center gap-2">
+                        <div class="flex w-[32px] h-[32px] items-center justify-center rounded-full bg-[#F3FCF6] flex-shrink-0">
+                          <svg class="w-3.5 h-3.5 text-[#1B8354]" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z"/><path d="M22 10v6"/><path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"/></svg>
+                        </div>
+                        <span class="text-[#1f2a37]" x-text="g.beneficiary"></span>
+                      </div>
+                    </td>
+                    <td class="px-4 py-4 text-sm font-medium text-[#1f2a37] whitespace-nowrap" x-text="g.amount + ' ﷼'"></td>
+                    <td class="px-4 py-4">
+                      <button @click.stop="openReportCard(g.id)"
+                              :class="g.reports.length > 0 ? 'border-[#1B8354] text-[#1B8354] hover:bg-[#1B8354] hover:text-white' : 'border-[#d2d6db] text-[#4d5761] hover:border-[#1B8354] hover:text-[#1B8354]'"
+                              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all whitespace-nowrap">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
+                        <span x-text="g.reports.length > 0 ? 'عرض التقرير' : 'رفع تقرير'"></span>
+                      </button>
+                    </td>
+                    <td class="px-4 py-4">
+                      <svg class="w-4 h-4 text-[#4d5761] group-hover:text-[#1B8354] transition-colors" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+                    </td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+        </template>
+      </main>
+
+    </div>
+  </template>
+
+  {% include "admin_panel/partials/_grant_detail_modal.html" %}
+  {% include "admin_panel/partials/_grant_items_modal.html" %}
+  {% include "admin_panel/partials/_logo_cropper.html" %}
+
+  {% include "admin_panel/partials/_report_card_modal.html" %}
+</div>
+
+<script>
+function donorPortalPage() {
+  return {
+    donor: null,
+    categoryStyles: {},
+    categoryHistory: [],
+    grants: [],
+    totalBeneficiariesCount: 0,
+    grantSort: '',
+    reportSelected: null,
+    selectedReportIdx: 0,
+    reportFileName: '',
+    confirmingReportUpload: false,
+    uploadedReportId: null,
+
+    donorEditMode: false,
+    savingDonor: false,
+    editDonorName: '',
+    editDonorLogo: null,
+    editDonorLogoFile: null,
+    editContacts: [],
+    showCategoryHistory: false,
+
+    cropperOpen: false,
+    cropperImgUrl: null,
+    cropperZoom: 1,
+    cropperOffsetX: 0,
+    cropperOffsetY: 0,
+    cropperBaseScale: 1,
+    cropperNaturalW: 0,
+    cropperNaturalH: 0,
+    cropperDragging: false,
+    cropperDragStartX: 0,
+    cropperDragStartY: 0,
+    cropperStartOffsetX: 0,
+    cropperStartOffsetY: 0,
+
+    beneficiariesList: [],
+    beneficiaryCategories: [],
+    selected: null,
+    editMode: false,
+    snapshot: null,
+    saveFlash: false,
+    savingEdit: false,
+    newVisit: { date: '', purpose: '' },
+    newNews: { title: '', url: '' },
+    newAnn: { text: '', url: '' },
+    showAddVisit: false,
+    showAddNews: false,
+    showAddAnn: false,
+    deletedItemIds: [],
+    itemsModalOpen: false,
+    savingItems: false,
+    itemsSavedFlash: false,
+    savingCounts: false,
+    countsSavedFlash: false,
+
+    init() {
+      this.donor = JSON.parse(document.getElementById('donor-info-data').textContent);
+      this.categoryStyles = JSON.parse(document.getElementById('portal-category-styles-data').textContent);
+      this.categoryHistory = JSON.parse(document.getElementById('category-history-data').textContent);
+      this.grants = JSON.parse(document.getElementById('portal-grants-data').textContent);
+      this.totalBeneficiariesCount = JSON.parse(document.getElementById('total-beneficiaries-data').textContent);
+      this.beneficiariesList = JSON.parse(document.getElementById('beneficiaries-list-data').textContent);
+      this.beneficiaryCategories = JSON.parse(document.getElementById('beneficiary-categories-data').textContent);
+      const openReportFlag = document.getElementById('open-report-flag');
+      if (openReportFlag) {
+        const rid = parseInt(openReportFlag.dataset.id, 10);
+        if (!isNaN(rid) && this.grants.some((g) => g.id === rid)) {
+          this.openReportCard(rid);
+        }
+      }
+      const uploadedParam = new URLSearchParams(window.location.search).get('uploaded');
+      if (uploadedParam) {
+        this.uploadedReportId = parseInt(uploadedParam, 10);
+        setTimeout(() => { this.uploadedReportId = null; }, 30000);
+      }
+      const openGrantFlag = document.getElementById('open-grant-flag');
+      if (openGrantFlag) {
+        const gid = parseInt(openGrantFlag.dataset.id, 10);
+        if (!isNaN(gid) && this.grants.some((g) => g.id === gid)) {
+          this.openGrant(gid);
+          if (new URLSearchParams(window.location.search).get('saved') === '1') {
+            this.saveFlash = true;
+            setTimeout(() => { this.saveFlash = false; }, 2500);
+          }
+          if (document.getElementById('open-items-flag')) {
+            this.itemsModalOpen = true;
+            if (new URLSearchParams(window.location.search).get('saved') === 'items') {
+              this.itemsSavedFlash = true;
+              setTimeout(() => { this.itemsSavedFlash = false; }, 2500);
+            }
+          }
+        }
+      }
+    },
+
+    get displayName() { return this.donor.name; },
+    get displayLogo() { return this.donor.logoUrl; },
+    get displayContacts() { return this.donor.contacts || []; },
+    get catStyle() {
+      return this.categoryStyles[this.donor.category] || { bg: 'bg-[#fdf3e7]', text: 'text-[#8B4513]', border: 'border-[#CD7F32]/40', dot: 'bg-[#CD7F32]' };
+    },
+    get totalBeneficiaries() { return this.totalBeneficiariesCount; },
+    parseAmount(s) {
+      const n = parseInt(String(s).replace(/[^0-9]/g, ''), 10);
+      return isNaN(n) ? 0 : n;
+    },
+    get totalAmount() {
+      return this.grants.reduce((sum, g) => sum + this.parseAmount(g.amount), 0);
+    },
+    get stats() {
+      return [
+        { label: 'إجمالي منح الجهة', value: String(this.grants.length),
+          icon: '<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="m15.477 12.89 1.515 8.526a.5.5 0 0 1-.81.47l-3.58-2.687a1 1 0 0 0-1.197 0l-3.586 2.686a.5.5 0 0 1-.81-.469l1.514-8.526"/><circle cx="12" cy="8" r="6"/></svg>' },
+        { label: 'إجمالي المستفيدين', value: String(this.totalBeneficiaries),
+          icon: '<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>' },
+        { label: 'إجمالي مبلغ التبرع', value: this.totalAmount.toLocaleString('en-US') + ' ﷼',
+          icon: '<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="18" x2="18" y1="20" y2="10"/><line x1="12" x2="12" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="14"/></svg>' },
+      ];
+    },
+    get sortedGrants() {
+      const list = this.grants.slice();
+      if (!this.grantSort) return list;
+      return list.sort((a, b) => {
+        const pa = this.parseAmount(a.amount);
+        const pb = this.parseAmount(b.amount);
+        if (this.grantSort === 'amount-desc') return pb - pa;
+        if (this.grantSort === 'amount-asc') return pa - pb;
+        if (this.grantSort === 'date-asc') return (a.date || '').localeCompare(b.date || '');
+        if (this.grantSort === 'date-desc') return (b.date || '').localeCompare(a.date || '');
+        return 0;
+      });
+    },
+    get reportGrant() {
+      if (this.reportSelected === null) return null;
+      return this.grants.find((g) => g.id === this.reportSelected) || null;
+    },
+    get reportPreviewUrl() {
+      const r = this.reportGrant && this.reportGrant.reports[this.selectedReportIdx];
+      return r && r.url ? r.url + '#toolbar=0&navpanes=0&scrollbar=0' : '';
+    },
+    openReportCard(id) {
+      this.reportSelected = id;
+      const g = this.grants.find((x) => x.id === id);
+      this.selectedReportIdx = g && g.reports.length > 0 ? g.reports.length - 1 : 0;
+    },
+    closeReportCard() {
+      this.reportSelected = null;
+      this.reportFileName = '';
+      this.confirmingReportUpload = false;
+    },
+    cancelReportUpload() {
+      this.reportFileName = '';
+      this.confirmingReportUpload = false;
+      if (this.$refs.reportCardInput) this.$refs.reportCardInput.value = '';
+    },
+    async confirmReportUpload() {
+      const file = this.$refs.reportCardInput.files[0];
+      if (!file || !this.reportGrant) return;
+      const grantId = this.reportGrant.id;
+      const body = new FormData();
+      body.append('csrfmiddlewaretoken', this.csrfToken());
+      body.append('file', file);
+      body.append('next', window.location.pathname);
+      try {
+        const res = await fetch('{% url "upload_grant_report" grant_id=0 %}'.replace('/0/', '/' + grantId + '/'), { method: 'POST', body });
+        if (!res.ok) throw new Error('upload failed');
+        window.location.href = res.url;
+      } catch (err) {
+        this.confirmingReportUpload = false;
+        alert('تعذّر رفع التقرير، يُرجى المحاولة مرة أخرى');
+      }
+    },
+    async undoReportUpload() {
+      if (!this.uploadedReportId || !this.reportGrant) return;
+      const grantId = this.reportGrant.id;
+      const body = new FormData();
+      body.append('csrfmiddlewaretoken', this.csrfToken());
+      body.append('action', 'delete');
+      body.append('report_id', this.uploadedReportId);
+      body.append('next', window.location.pathname);
+      try {
+        const res = await fetch('{% url "upload_grant_report" grant_id=0 %}'.replace('/0/', '/' + grantId + '/'), { method: 'POST', body });
+        if (!res.ok) throw new Error('delete failed');
+        window.location.href = res.url;
+      } catch (err) {
+        alert('تعذّر التراجع عن الرفع، يُرجى المحاولة مرة أخرى');
+      }
+    },
+
+    isoToDisplay(iso) {
+      if (!iso) return '';
+      const [y, m, d] = iso.split('-');
+      return `${d}/${m}/${y}`;
+    },
+    decisionCombined(g) {
+      const parts = [];
+      if (g.decisionNumber) parts.push(`رقم ${g.decisionNumber}`);
+      if (g.decisionDate) parts.push(this.isoToDisplay(g.decisionDate));
+      if (g.type === 'عيني' && g.decisionQuantityCount) parts.push(`العدد ${g.decisionQuantityCount}`);
+      return parts.join('، ') || '—';
+    },
+
+    get grant() {
+      if (this.selected === null) return null;
+      return this.grants.find((g) => g.id === this.selected) || null;
+    },
+    availableCategoriesForGrant() {
+      if (!this.grant) return [];
+      const used = new Set(this.grant.beneficiaries.map((b) => b.category));
+      return this.beneficiaryCategories.filter((c) => !used.has(c[0]));
+    },
+    categoryOptionsFor(idx) {
+      const current = this.grant.beneficiaries[idx].category;
+      return this.beneficiaryCategories.filter((c) => c[0] === current || !this.grant.beneficiaries.some((b, i) => i !== idx && b.category === c[0]));
+    },
+    addBeneficiaryCategory() {
+      if (!this.grant || this.availableCategoriesForGrant().length === 0) return;
+      this.grant.beneficiaries.push({ category: '', categoryLabel: '', count: 0, other_label: '' });
+    },
+    removeBeneficiaryCategory(idx) {
+      this.grant.beneficiaries.splice(idx, 1);
+    },
+    changeBeneficiaryCategory(idx, newValue) {
+      const opt = this.beneficiaryCategories.find((c) => c[0] === newValue);
+      const b = this.grant.beneficiaries[idx];
+      if (opt) { b.category = opt[0]; b.categoryLabel = opt[1]; }
+      if (newValue !== 'other') { b.other_label = ''; }
+    },
+    async saveCountsCard() {
+      if (!this.grant) return;
+      const g = this.grant;
+      const body = new FormData();
+      body.append('csrfmiddlewaretoken', this.csrfToken());
+      body.append('form_type', 'save_counts');
+      body.append('grant_id', g.id);
+      (g.beneficiaries || []).forEach((b) => {
+        body.append('category', b.category);
+        body.append('count_value', b.count);
+        body.append('other_label', b.other_label || '');
+      });
+
+      this.savingCounts = true;
+      try {
+        const res = await fetch(window.location.pathname, {
+          method: 'POST', body,
+          headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        });
+        if (!res.ok) throw new Error('save failed');
+        const data = await res.json();
+        const idx = this.grants.findIndex((x) => x.id === g.id);
+        if (idx !== -1) this.grants[idx].beneficiaries = data.beneficiaries;
+        this.savingCounts = false;
+        this.countsSavedFlash = true;
+        setTimeout(() => { this.countsSavedFlash = false; }, 2500);
+      } catch (e) {
+        this.savingCounts = false;
+        alert('تعذّر حفظ التعديلات، يُرجى المحاولة مرة أخرى');
+      }
+    },
+    resetAddForms() {
+      this.newVisit = { date: '', purpose: '' };
+      this.newNews = { title: '', url: '' };
+      this.newAnn = { text: '', url: '' };
+      this.showAddVisit = false;
+      this.showAddNews = false;
+      this.showAddAnn = false;
+    },
+    openGrant(id) {
+      this.selected = id;
+      this.editMode = false;
+      this.snapshot = null;
+      this.saveFlash = false;
+      this.resetAddForms();
+    },
+    closeModal() {
+      this.selected = null;
+      this.editMode = false;
+      this.snapshot = null;
+      this.deletedItemIds = [];
+      this.itemsModalOpen = false;
+      this.itemsSavedFlash = false;
+      this.countsSavedFlash = false;
+      this.resetAddForms();
+    },
+    enterEdit() {
+      if (!this.grant) return;
+      this.snapshot = JSON.parse(JSON.stringify(this.grant));
+      this.editMode = true;
+      this.saveFlash = false;
+      this.deletedItemIds = [];
+      this.resetAddForms();
+    },
+    cancelEdit() {
+      if (this.snapshot) {
+        const idx = this.grants.findIndex((g) => g.id === this.snapshot.id);
+        if (idx !== -1) this.grants[idx] = JSON.parse(JSON.stringify(this.snapshot));
+      }
+      this.editMode = false;
+      this.snapshot = null;
+      this.deletedItemIds = [];
+      this.resetAddForms();
+    },
+    addItemToGrant() {
+      if (!this.grant) return;
+      if (this.grant.itemsLimit !== null && this.grant.items.length >= this.grant.itemsLimit) return;
+      this.grant.items.push({
+        uid: 'new_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+        id: null, item_type: 'صنف جديد', condition: 'new',
+        building: '', floor: '', room: '', model: '', serial_number: '',
+        attachment_name: '', attachment_url: '', _file: null, clear_attachment: false,
+      });
+    },
+    removeItemFromGrant(idx) {
+      const it = this.grant.items[idx];
+      if (it.id) this.deletedItemIds.push(it.id);
+      this.grant.items.splice(idx, 1);
+    },
+    handleItemFileChange(e, it) {
+      const file = e.target.files[0];
+      if (!file) return;
+      it._file = file;
+      it.attachment_name = file.name;
+      it.clear_attachment = false;
+    },
+    async saveEdit() {
+      if (!this.grant) return;
+      const g = this.grant;
+      const body = new FormData();
+      body.append('csrfmiddlewaretoken', this.csrfToken());
+      body.append('form_type', 'save_grant');
+      body.append('grant_id', g.id);
+      body.append('type', g.type);
+      body.append('date', g.date);
+      body.append('beneficiary_id', g.beneficiaryId);
+      body.append('decisionNumber', g.decisionNumber || '');
+      body.append('decisionDate', g.decisionDate || '');
+      body.append('decisionQuantityCount', g.decisionQuantityCount || '');
+      body.append('decisionQuantityType', g.decisionQuantityType || '');
+      body.append('amount', g.amount);
+      body.append('status', g.status);
+      body.append('visits_json', JSON.stringify(g.visits));
+      body.append('news_json', JSON.stringify(g.news));
+      body.append('announcements_json', JSON.stringify(g.announcements));
+
+      this.savingEdit = true;
+      try {
+        const res = await fetch(window.location.pathname, { method: 'POST', body });
+        if (!res.ok) throw new Error('save failed');
+        window.location.href = window.location.pathname + '?open=' + g.id + '&saved=1';
+      } catch (e) {
+        this.savingEdit = false;
+        alert('تعذّر حفظ التعديلات، يُرجى المحاولة مرة أخرى');
+      }
+    },
+    async saveItemsCard() {
+      if (!this.grant) return;
+      const g = this.grant;
+      const body = new FormData();
+      body.append('csrfmiddlewaretoken', this.csrfToken());
+      body.append('form_type', 'save_items');
+      body.append('grant_id', g.id);
+      body.append('items_json', JSON.stringify((g.items || []).map((it) => ({
+        id: it.id, uid: it.uid, item_type: it.item_type, condition: it.condition,
+        building: it.building, floor: it.floor, room: it.room, model: it.model,
+        serial_number: it.serial_number, clear_attachment: !!it.clear_attachment,
+      }))));
+      body.append('deleted_ids_json', JSON.stringify(this.deletedItemIds));
+      (g.items || []).forEach((it) => {
+        if (it._file instanceof File) body.append('file_' + it.uid, it._file);
+      });
+
+      this.savingItems = true;
+      try {
+        const res = await fetch(window.location.pathname, {
+          method: 'POST', body,
+          headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        });
+        if (!res.ok) throw new Error('save failed');
+        const data = await res.json();
+        const idx = this.grants.findIndex((x) => x.id === g.id);
+        if (idx !== -1) {
+          this.grants[idx].items = data.items;
+          this.grants[idx].itemsLimit = data.itemsLimit;
+        }
+        this.deletedItemIds = [];
+        this.savingItems = false;
+        this.itemsSavedFlash = true;
+        setTimeout(() => { this.itemsSavedFlash = false; }, 2500);
+      } catch (e) {
+        this.savingItems = false;
+        alert('تعذّر حفظ الأصناف، يُرجى المحاولة مرة أخرى');
+      }
+    },
+    addVisit() {
+      if (!this.newVisit.date || !this.newVisit.purpose.trim()) return;
+      this.grant.visits.push({ ...this.newVisit });
+      this.newVisit = { date: '', purpose: '' };
+      this.showAddVisit = false;
+    },
+    addNews() {
+      if (!this.newNews.title.trim() || !this.newNews.url.trim()) return;
+      this.grant.news.push({ title: this.newNews.title.trim(), url: this.newNews.url.trim() });
+      this.newNews = { title: '', url: '' };
+      this.showAddNews = false;
+    },
+    addAnnouncement() {
+      if (!this.newAnn.text.trim() || !this.newAnn.url.trim()) return;
+      this.grant.announcements.push({ text: this.newAnn.text.trim(), url: this.newAnn.url.trim() });
+      this.newAnn = { text: '', url: '' };
+      this.showAddAnn = false;
+    },
+
+    csrfToken() {
+      return document.querySelector('#save-donor-form [name=csrfmiddlewaretoken]').value;
+    },
+    enterDonorEdit() {
+      this.editDonorName = this.displayName;
+      this.editDonorLogo = this.displayLogo;
+      this.editDonorLogoFile = null;
+      const dc = this.displayContacts;
+      this.editContacts = dc.length ? dc.map((c) => ({ ...c })) : [{ name: '', title: '', email: '', phone: '' }];
+      this.donorEditMode = true;
+    },
+    cancelDonorEdit() { this.donorEditMode = false; },
+    async saveDonorEdit() {
+      if (this.savingDonor) return;
+      this.savingDonor = true;
+
+      const body = new FormData();
+      body.append('csrfmiddlewaretoken', this.csrfToken());
+      body.append('form_type', 'save_donor');
+      body.append('name', this.editDonorName.trim() || this.donor.name);
+      body.append('contacts_json', JSON.stringify(this.editContacts.map((c) => ({
+        name: c.name.trim(), title: c.title.trim(), email: c.email.trim(), phone: c.phone.trim(),
+      }))));
+      if (this.editDonorLogoFile) body.append('logo', this.editDonorLogoFile);
+
+      try {
+        const res = await fetch(window.location.pathname, { method: 'POST', body });
+        if (!res.ok) throw new Error('save failed');
+        window.location.reload();
+      } catch (e) {
+        this.savingDonor = false;
+        alert('تعذّر حفظ التعديلات، يُرجى المحاولة مرة أخرى');
+      }
+    },
+    addEditContact() { this.editContacts.push({ name: '', title: '', email: '', phone: '' }); },
+    removeEditContact(i) { this.editContacts.splice(i, 1); },
+    handleDonorLogoChange(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => { this.openCropper(reader.result); };
+      reader.readAsDataURL(file);
+      e.target.value = '';
+    },
+    openCropper(dataUrl) {
+      this.cropperImgUrl = dataUrl;
+      this.cropperZoom = 1;
+      this.cropperOffsetX = 0;
+      this.cropperOffsetY = 0;
+      const img = new Image();
+      img.onload = () => {
+        this.cropperNaturalW = img.naturalWidth;
+        this.cropperNaturalH = img.naturalHeight;
+        this.cropperBaseScale = 280 / Math.min(img.naturalWidth, img.naturalHeight);
+        this.cropperOpen = true;
+      };
+      img.src = dataUrl;
+    },
+    closeCropper() {
+      this.cropperOpen = false;
+      this.cropperImgUrl = null;
+    },
+    cropperClamp() {
+      const scale = this.cropperBaseScale * this.cropperZoom;
+      const dispW = this.cropperNaturalW * scale;
+      const dispH = this.cropperNaturalH * scale;
+      const maxX = Math.max(0, (dispW - 280) / 2);
+      const maxY = Math.max(0, (dispH - 280) / 2);
+      this.cropperOffsetX = Math.min(maxX, Math.max(-maxX, this.cropperOffsetX));
+      this.cropperOffsetY = Math.min(maxY, Math.max(-maxY, this.cropperOffsetY));
+    },
+    cropperStartDrag(e) {
+      this.cropperDragging = true;
+      const point = e.touches ? e.touches[0] : e;
+      this.cropperDragStartX = point.clientX;
+      this.cropperDragStartY = point.clientY;
+      this.cropperStartOffsetX = this.cropperOffsetX;
+      this.cropperStartOffsetY = this.cropperOffsetY;
+    },
+    cropperDrag(e) {
+      if (!this.cropperDragging) return;
+      const point = e.touches ? e.touches[0] : e;
+      this.cropperOffsetX = this.cropperStartOffsetX + (point.clientX - this.cropperDragStartX);
+      this.cropperOffsetY = this.cropperStartOffsetY + (point.clientY - this.cropperDragStartY);
+      this.cropperClamp();
+    },
+    cropperEndDrag() {
+      this.cropperDragging = false;
+    },
+    async confirmCrop() {
+      this.cropperClamp();
+      const size = 320;
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+      img.src = this.cropperImgUrl;
+      await new Promise((resolve) => { img.onload = resolve; });
+
+      const scale = this.cropperBaseScale * this.cropperZoom * (size / 280);
+      const dispW = this.cropperNaturalW * scale;
+      const dispH = this.cropperNaturalH * scale;
+      const dx = (size - dispW) / 2 + this.cropperOffsetX * (size / 280);
+      const dy = (size - dispH) / 2 + this.cropperOffsetY * (size / 280);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, size, size);
+      ctx.drawImage(img, dx, dy, dispW, dispH);
+
+      const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+      const uniqueName = `logo_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.png`;
+      this.editDonorLogoFile = new File([blob], uniqueName, { type: 'image/png' });
+      this.editDonorLogo = canvas.toDataURL('image/png');
+      this.closeCropper();
+    },
+  };
+}
+</script>
+{% endblock %}

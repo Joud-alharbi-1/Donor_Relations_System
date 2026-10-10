@@ -1,0 +1,48 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}بوابة إدارة علاقات المانحين{% endblock %}</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+  [x-cloak] { display: none !important; }
+  .rounded-lg { border-radius: 0.625rem !important; }
+</style>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body dir="rtl" class="min-h-screen bg-[#f8f9fa] text-[#1f2a37]" style="font-family:'IBM Plex Sans Arabic',sans-serif;">
+
+  {# هيدر البوابة — منفصل تماماً عن هيدر الموقع العام #}
+  <div class="border-b border-[#E5E7EB] bg-white">
+    <div class="max-w-screen-lg mx-auto px-4 sm:px-8 flex items-center justify-between">
+      <div class="flex gap-1 overflow-x-auto">
+        {% block portal_nav %}{% endblock %}
+      </div>
+      <a href="{% url 'logout' %}" class="text-sm text-[#4d5761] hover:text-[#161616] whitespace-nowrap px-2">تسجيل الخروج</a>
+    </div>
+  </div>
+
+  {% if messages %}
+    <div class="max-w-screen-lg mx-auto px-4 sm:px-8 pt-4">
+      {% for message in messages %}
+      <div class="flex items-center gap-3 px-4 py-3 rounded-xl mb-3" style="background-color:#fdf2f2; border:1px solid #f5c6c6;">
+        <span class="text-sm font-medium" style="color:#d4183d;">
+          {% if message.message == "duplicate_serial" %}هذا الرقم التسلسلي مسجّل من قبل لصنف آخر
+          {% elif message.message == "missing_file" %}يجب اختيار ملف قبل الرفع
+          {% elif message.message == "items_limit_exceeded" %}تم تجاوز العدد المسموح به من الأصناف. تم حفظ الأصناف ضمن الحد المسموح فقط
+          {% else %}{{ message }}{% endif %}
+        </span>
+      </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {% block content %}{% endblock %}
+
+</body>
+</html>

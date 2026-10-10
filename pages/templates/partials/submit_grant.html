@@ -1,0 +1,165 @@
+{# تبويب: تقديم منحة — نموذج تجميل النوع + فتح/إغلاق النموذج (الإرسال الفعلي عبر Django form + إيميل لاحقاً) #}
+<section class="py-12 bg-white" x-data="{ formOpen: false }" dir="rtl">
+  <div class="max-w-4xl mx-auto px-6">
+    <div class="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-6 items-stretch">
+
+      {# بطاقة CTA #}
+      <div class="relative rounded-2xl overflow-hidden flex flex-col justify-between p-8 min-h-[280px]"
+           style="background:linear-gradient(135deg, #063e27 0%, #1b6b44 55%, #2d8a5a 100%);">
+        <div class="absolute -top-12 -left-12 w-48 h-48 rounded-full border border-white/10"></div>
+        <div class="absolute -top-6 -left-6 w-32 h-32 rounded-full border border-white/10"></div>
+        <div class="absolute bottom-0 right-0 w-40 h-40 rounded-full border border-white/5"></div>
+
+        <div class="relative flex flex-col gap-5">
+          <span class="self-start text-xs font-semibold px-3 py-1 rounded-full bg-white/15 text-white/90 tracking-wide">تقديم منحة</span>
+          <div class="flex flex-col gap-2">
+            <h3 class="text-2xl font-bold text-white leading-snug">أرغب بالمساهمة</h3>
+            <p class="text-white/70 text-sm leading-relaxed max-w-sm">تسهم المنح في دعم مستقبل الطلاب والأبحاث في جامعة الملك عبدالعزيز.</p>
+          </div>
+        </div>
+
+        <div class="relative mt-8">
+          <button type="button" @click="formOpen = !formOpen"
+                  class="inline-flex items-center gap-3 px-6 py-3 rounded-xl bg-white text-[#063e27] font-bold text-sm shadow-lg hover:bg-[#f0f9f0] transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V8L14 2Z"/>
+              <path d="M14 2V8H20M8 13H16M8 17H13"/>
+            </svg>
+            تقديم طلب مساهمة
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                 class="transition-transform duration-300" :style="formOpen ? 'transform:rotate(180deg)' : 'transform:rotate(0deg)'">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      {# بطاقات التواصل #}
+      <div class="flex flex-col gap-3 lg:w-72">
+        <p class="text-xs font-semibold text-gray-400 uppercase tracking-widest pe-1">للتواصل معنا</p>
+        {% for item in contact_items %}
+        <div class="flex items-center gap-4 p-4 rounded-2xl border bg-white" style="border-color:#d2d6db; box-shadow:0px 2px 4px -2px rgba(16,24,40,0.06);">
+          <div class="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style="background-color:#f3fcf6;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1b8354" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="15 18 9 12 15 6"/>
+            </svg>
+          </div>
+          <div>
+            <p class="text-xs font-medium mb-0.5" style="color:#4d5761;">{{ item.label }}</p>
+            <p class="text-sm font-bold" style="color:#1f2a37;">{{ item.value }}</p>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    {# النموذج — يفتح بالـ Alpine #}
+    
+    <div x-show="formOpen" x-cloak x-transition
+       x-data="{ donationType: 'مالي', submitted: false, sending: false, failed: false }"
+
+         class="mt-6 rounded-2xl border bg-white p-6" style="border-color:#d2d6db;">
+      <div class="mb-5">
+        <h3 class="text-lg font-bold" style="color:#14573a;">أرغب بالمساهمة</h3>
+        <p class="text-xs mt-1" style="color:#4d5761;">تقديم طلب منحة لجامعة الملك عبدالعزيز</p>
+      </div>
+
+
+<form class="grid grid-cols-1 md:grid-cols-2 gap-5"
+            x-effect="if (!formOpen) { submitted = false; failed = false; }"
+            @submit.prevent="
+              sending = true; failed = false;
+              fetch('{% url 'submit_grant' %}', { method: 'POST', body: new FormData($el) })
+                .then(r => r.json())
+                .then(data => {
+                  sending = false;
+                  if (data.success) { submitted = true; $el.reset(); }
+                  else { failed = true; }
+                })
+                .catch(() => { sending = false; failed = true; })
+            ">
+
+        {% csrf_token %}
+        <div>
+          <label class="block text-sm font-medium mb-1.5" style="color:#1f2a37;">
+            الاسم / الجهة المتبرعة <span style="color:#d4183d;">*</span>
+          </label>
+          <input type="text" name="donor_name" required placeholder="الاسم الكامل أو اسم الجهة"
+                 class="w-full h-11 px-0 text-sm outline-none bg-transparent border-0 border-b-2 rounded-none transition-all duration-200 focus:border-b-[3px]"
+                 style="color:#1f2a37; border-color:#d2d6db;" onfocus="this.style.borderColor='#063e27'" onblur="this.style.borderColor='#d2d6db'">
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1.5" style="color:#1f2a37;">
+            رقم التواصل <span style="color:#d4183d;">*</span>
+          </label>
+          <input type="tel" name="phone" required placeholder="05xxxxxxxx" inputmode="numeric" pattern="05[0-9]{8}" maxlength="10" title="يجب أن يتكوّن رقم الجوال من 10 أرقام"
+                 class="w-full h-11 px-0 text-sm outline-none bg-transparent border-0 border-b-2 rounded-none transition-all duration-200 focus:border-b-[3px]"
+                 style="color:#1f2a37; border-color:#d2d6db;" onfocus="this.style.borderColor='#063e27'" onblur="this.style.borderColor='#d2d6db'">
+        </div>
+
+        <div class="flex flex-col justify-between">
+          <label class="block text-sm font-medium mb-2" style="color:#1f2a37;">نوع التبرع</label>
+          <div class="flex gap-2 flex-wrap items-center" style="min-height:44px;">
+            <template x-for="type in ['مالي', 'عيني']" :key="type">
+              <button type="button" @click="donationType = type"
+                      class="h-11 px-5 rounded-full text-sm font-medium border-2 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1b8354]"
+                      :style="donationType === type
+                        ? 'background-color:#14573a; border-color:#14573a; color:white;'
+                        : 'background-color:white; border-color:#d2d6db; color:#4d5761;'"
+                      x-text="type"></button>
+            </template>
+          </div>
+          <input type="hidden" name="donation_type" :value="donationType">
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1.5" style="color:#1f2a37;">
+            البريد الإلكتروني <span style="color:#d4183d;">*</span>
+          </label>
+          <input type="email" name="email" required placeholder="example@email.com"
+                 class="w-full h-11 px-0 text-sm outline-none bg-transparent border-0 border-b-2 rounded-none transition-all duration-200 focus:border-b-[3px]"
+                 style="color:#1f2a37; border-color:#d2d6db;" onfocus="this.style.borderColor='#063e27'" onblur="this.style.borderColor='#d2d6db'">
+        </div>
+
+        <div class="md:col-span-2">
+          <label class="block text-sm font-medium mb-1.5" style="color:#1f2a37;">ملاحظات</label>
+          <textarea name="notes" rows="4" placeholder="أي ملاحظات إضافية..."
+                    class="w-full px-0 py-2 text-sm outline-none resize-none bg-transparent border-0 border-b-2 rounded-none transition-all duration-200 focus:border-b-[3px]"
+                    style="color:#1f2a37; border-color:#d2d6db;" onfocus="this.style.borderColor='#063e27'" onblur="this.style.borderColor='#d2d6db'"></textarea>
+        </div>
+
+        <div class="md:col-span-2">
+
+
+<button type="submit" :disabled="sending"
+                  class="h-11 px-8 rounded-lg text-white text-sm font-semibold transition-opacity hover:opacity-90 disabled:opacity-60"
+                  style="background-color:#1b8354;">
+            <span x-show="!sending">إرسال الطلب</span>
+            <span x-show="sending" x-cloak>جاري الإرسال...</span>
+          </button>
+
+          <div x-show="failed" x-cloak x-transition
+               class="flex items-center gap-3 px-5 py-4 rounded-xl mt-4" style="background-color:#fdf2f2; border:1px solid #f5c6c6;">
+            <span class="font-bold text-sm" style="color:#d4183d;">تعذّر إرسال الطلب، يُرجى المحاولة مرة أخرى</span>
+          </div>
+
+
+
+
+          <div x-show="submitted" x-cloak x-transition
+               class="flex items-center gap-3 px-5 py-4 rounded-xl mt-4" style="background-color:#f0f9f0; border:1px solid #c8e6c9;">
+            <div class="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center" style="background-color:#2e7d32;">
+              <svg width="14" height="14" viewBox="0 0 12 12" fill="none">
+                <path d="M2 6l3 3 5-5" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <div class="flex flex-col gap-0.5">
+              <span class="font-bold text-sm" style="color:#1b5e20;">تم الإرسال بنجاح</span>
+              <span class="text-xs" style="color:#388e3c;">شكراً لك، سيتم التواصل معك قريباً.</span>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+
+  </div>
+</section>

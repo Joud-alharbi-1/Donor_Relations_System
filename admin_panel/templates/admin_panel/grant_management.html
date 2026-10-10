@@ -1,0 +1,450 @@
+{% extends "admin_panel/base.html" %}
+{% block content %}
+{{ donors_list|json_script:"donors-list-data" }}
+{{ beneficiaries_list|json_script:"beneficiaries-list-data" }}
+{{ beneficiary_categories|json_script:"beneficiary-categories-data" }}
+
+<div dir="rtl" class="min-h-screen bg-[#f8f9fa]" style="font-family: 'IBM Plex Sans Arabic', sans-serif;"
+     x-data="grantManagementPage()" x-init="init()">
+  <form id="save-new-grant-form" method="post" class="hidden">
+    {% csrf_token %}
+  </form>
+
+  <main class="max-w-screen-lg mx-auto px-4 sm:px-8 py-10">
+
+    <div class="mb-8">
+      <h1 class="text-[20px] font-bold text-[#161616]">إضافة منحة</h1>
+      <p class="text-sm text-[#4d5761] mt-1">تسجيل بيانات منحة جديدة من قبل موظف إدارة علاقات المانحين</p>
+    </div>
+
+    <div class="space-y-6">
+
+      {# ── بيانات المنحة ── #}
+      <div class="rounded-[16px] bg-white p-6 shadow-[0px_4px_8px_-2px_rgba(16,24,40,0.10),0px_2px_4px_-2px_rgba(16,24,40,0.06)]">
+        <div class="flex items-center gap-2 mb-3">
+          <svg class="w-3.5 h-3.5 text-[#4d5761]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path stroke-linecap="round" stroke-linejoin="round" d="M14 2v4a2 2 0 0 0 2 2h4"/><path stroke-linecap="round" stroke-linejoin="round" d="M10 9H8"/><path stroke-linecap="round" stroke-linejoin="round" d="M16 13H8"/><path stroke-linecap="round" stroke-linejoin="round" d="M16 17H8"/></svg>
+          <h3 class="text-xs font-semibold text-[#4d5761] uppercase tracking-wide">بيانات المنحة</h3>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+          <div class="sm:col-span-2">
+            <label class="block text-xs font-medium text-[#4d5761] mb-1">اسم المنحة</label>
+            <input type="text" x-model="form.title" placeholder="مثال: توقيع أجهزة حاسب آلي"
+                   class="w-full bg-white border border-[#d2d6db] rounded-lg px-3 py-2 text-sm text-[#161616] focus:outline-none focus:border-[#1B8354] focus:ring-1 focus:ring-[#1B8354]/20 transition-all placeholder:text-[#9DA4AE]" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-[#4d5761] mb-1">تاريخ المنحة</label>
+            {% include "admin_panel/partials/_date_picker.html" with field="form.date" placeholder="اختر تاريخ المنحة" %}
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-[#4d5761] mb-1">نوع المنحة</label>
+            <div class="relative">
+              <select x-model="form.type" class="w-full bg-white border border-[#d2d6db] rounded-lg px-3 py-2 text-sm text-[#161616] focus:outline-none focus:border-[#1B8354] focus:ring-1 focus:ring-[#1B8354]/20 transition-all appearance-none pl-8">
+                <option value="مالي">مالي</option>
+                <option value="عيني">عيني</option>
+              </select>
+              <svg class="absolute top-1/2 -translate-y-1/2 left-2.5 w-3.5 h-3.5 text-[#9DA4AE] pointer-events-none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6"/></svg>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-[#4d5761] mb-1">رقم القرار</label>
+            <input type="text" x-model="form.decisionNumber" @input="form.decisionNumber = $event.target.value.replace(/[^\d/\-\s]/g, '')" placeholder="مثال: 246/2025"
+                   class="w-full bg-white border border-[#d2d6db] rounded-lg px-3 py-2 text-sm text-[#161616] focus:outline-none focus:border-[#1B8354] focus:ring-1 focus:ring-[#1B8354]/20 transition-all placeholder:text-[#9DA4AE]" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-[#4d5761] mb-1">تاريخ القرار</label>
+            {% include "admin_panel/partials/_date_picker.html" with field="form.decisionDate" placeholder="اختر تاريخ القرار" %}
+          </div>
+
+          <template x-if="form.type === 'عيني'">
+            <div>
+              <div class="flex items-center gap-2">
+                <div class="w-1/2">
+                  <label class="block text-xs font-medium text-[#4d5761] mb-1">النوع</label>
+                  <input type="text" x-model="form.decisionQtyType" placeholder="جهاز"
+                         class="w-full bg-white border border-[#d2d6db] rounded-lg px-3 py-2 text-sm text-[#161616] focus:outline-none focus:border-[#1B8354] focus:ring-1 focus:ring-[#1B8354]/20 transition-all placeholder:text-[#9DA4AE]" />
+                </div>
+                <div class="w-1/2">
+                  <label class="block text-xs font-medium text-[#4d5761] mb-1">العدد</label>
+                  <input type="text" inputmode="numeric" x-model="form.decisionQtyCount" placeholder="50"
+                         @input="form.decisionQtyCount = $event.target.value.replace(/[^\d]/g, '')"
+                         class="w-full bg-white border border-[#d2d6db] rounded-lg px-3 py-2 text-sm text-[#161616] focus:outline-none focus:border-[#1B8354] focus:ring-1 focus:ring-[#1B8354]/20 transition-all placeholder:text-[#9DA4AE]" />
+                </div>
+              </div>
+            </div>
+          </template>
+
+          <div>
+            <label class="block text-xs font-medium text-[#4d5761] mb-1">الجهة المانحة</label>
+            <div class="relative">
+              <select x-model="form.donor" class="w-full bg-white border border-[#d2d6db] rounded-lg px-3 py-2 text-sm text-[#161616] focus:outline-none focus:border-[#1B8354] focus:ring-1 focus:ring-[#1B8354]/20 transition-all appearance-none pl-8">
+                <option value="">-- اختر الجهة المانحة --</option>
+                <template x-for="d in donorsList" :key="d.id">
+                  <option :value="d.id" x-text="d.name_ar"></option>
+                </template>
+                <option value="__other__">أخرى...</option>
+              </select>
+              <svg class="absolute top-1/2 -translate-y-1/2 left-2.5 w-3.5 h-3.5 text-[#9DA4AE] pointer-events-none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6"/></svg>
+            </div>
+            <template x-if="form.donor === '__other__'">
+              <input type="text" x-model="form.donorOther" placeholder="اكتب اسم الجهة المانحة"
+                     class="w-full bg-white border border-[#d2d6db] rounded-lg px-3 py-2 text-sm text-[#161616] focus:outline-none focus:border-[#1B8354] focus:ring-1 focus:ring-[#1B8354]/20 transition-all placeholder:text-[#9DA4AE] mt-2" />
+            </template>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-[#4d5761] mb-1">الجهة المستفيدة</label>
+            <div class="relative">
+              <select x-model="form.beneficiary" class="w-full bg-white border border-[#d2d6db] rounded-lg px-3 py-2 text-sm text-[#161616] focus:outline-none focus:border-[#1B8354] focus:ring-1 focus:ring-[#1B8354]/20 transition-all appearance-none pl-8">
+                <option value="">-- اختر الجهة المستفيدة --</option>
+                <template x-for="b in beneficiariesList" :key="b.id">
+                  <option :value="b.id" x-text="b.name_ar"></option>
+                </template>
+              </select>
+              <svg class="absolute top-1/2 -translate-y-1/2 left-2.5 w-3.5 h-3.5 text-[#9DA4AE] pointer-events-none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6"/></svg>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-[#4d5761] mb-1">المبلغ / القيمة (ريال)</label>
+            <input type="text" inputmode="numeric" x-model="form.amount"
+                   @input="form.amount = $event.target.value.replace(/[^\d,]/g, '')"
+                   placeholder="مثال: 200,000"
+                   class="w-full bg-white border border-[#d2d6db] rounded-lg px-3 py-2 text-sm text-[#161616] focus:outline-none focus:border-[#1B8354] focus:ring-1 focus:ring-[#1B8354]/20 transition-all placeholder:text-[#9DA4AE]" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-[#4d5761] mb-1">حالة المنحة</label>
+            <div class="relative">
+              <select x-model="form.status" class="w-full bg-white border border-[#d2d6db] rounded-lg px-3 py-2 text-sm text-[#161616] focus:outline-none focus:border-[#1B8354] focus:ring-1 focus:ring-[#1B8354]/20 transition-all appearance-none pl-8">
+                <option value="جارية">جارية</option>
+                <option value="منتهية">منتهية</option>
+              </select>
+              <svg class="absolute top-1/2 -translate-y-1/2 left-2.5 w-3.5 h-3.5 text-[#9DA4AE] pointer-events-none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6"/></svg>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      {# ── عدد ونوع المستفيدين ── #}
+      <div class="rounded-[16px] bg-white p-6 shadow-[0px_4px_8px_-2px_rgba(16,24,40,0.10),0px_2px_4px_-2px_rgba(16,24,40,0.06)]">
+        <div class="flex items-center gap-2 mb-3">
+          <svg class="w-3.5 h-3.5 text-[#4d5761]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path stroke-linecap="round" stroke-linejoin="round" d="M22 21v-2a4 4 0 0 0-3-3.87"/><path stroke-linecap="round" stroke-linejoin="round" d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <h3 class="text-xs font-semibold text-[#4d5761] uppercase tracking-wide">عدد ونوع المستفيدين (تقديري)</h3>
+        </div>
+        <p class="text-xs text-[#9DA4AE] mb-4">يمكن للجهة المستفيدة تعديل هذه البيانات لاحقاً بعد الاستلام الفعلي</p>
+        <div class="flex flex-wrap gap-3 mb-4">
+          <template x-for="(b, i) in beneficiaryCounts" :key="i">
+            <div class="rounded-[16px] bg-white p-4 border border-[#d2d6db] flex items-center gap-3 shadow-[0px_4px_8px_-2px_rgba(16,24,40,0.10),0px_2px_4px_-2px_rgba(16,24,40,0.06)] relative group">
+              <div class="flex w-[40px] h-[40px] items-center justify-center rounded-full bg-[#F3FCF6] flex-shrink-0">
+                <svg class="w-4 h-4 text-[#1B8354]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path stroke-linecap="round" stroke-linejoin="round" d="M22 21v-2a4 4 0 0 0-3-3.87"/><path stroke-linecap="round" stroke-linejoin="round" d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              </div>
+              <div class="flex flex-col gap-1">
+                <div class="flex items-center gap-1">
+                  <button @click="b.count = Math.max(0, b.count - 1)" class="w-5 h-5 rounded-full border border-[#d2d6db] text-[#4d5761] hover:border-[#1B8354] hover:text-[#1B8354] hover:bg-[#F3FCF6] transition-all flex items-center justify-center text-xs leading-none flex-shrink-0">−</button>
+                  <input type="text" inputmode="numeric" :value="b.count"
+                         @input="b.count = parseInt($event.target.value.replace(/[^\d]/g, '')) || 0"
+                         class="w-12 text-[18px] font-bold text-[#1B8354] bg-transparent focus:outline-none text-center" />
+                  <button @click="b.count = b.count + 1" class="w-5 h-5 rounded-full border border-[#d2d6db] text-[#4d5761] hover:border-[#1B8354] hover:text-[#1B8354] hover:bg-[#F3FCF6] transition-all flex items-center justify-center text-xs leading-none flex-shrink-0">+</button>
+                </div>
+                <select x-model="b.category" class="text-xs text-[#4d5761] bg-transparent border-b border-dashed border-[#d2d6db] focus:outline-none focus:border-[#1B8354] w-24">
+                  <template x-for="c in availableCategoriesFor(b.category)" :key="c[0]">
+                    <option :value="c[0]" x-text="c[1]"></option>
+                  </template>
+                </select>
+                <template x-if="b.category === 'other'">
+                  <input type="text" x-model="b.other_label" placeholder="اسم الفئة" maxlength="100"
+                         class="text-xs text-[#4d5761] bg-transparent border-b border-dashed border-[#d2d6db] focus:outline-none focus:border-[#1B8354] w-24 mt-1">
+                </template>
+              </div>
+              <button @click="beneficiaryCounts.splice(i, 1)"
+                      class="absolute -top-2 -left-2 w-5 h-5 rounded-full bg-red-100 border border-red-200 text-red-400 hover:text-red-600 hidden group-hover:flex items-center justify-center transition-all">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M6 18L18 6M6 6l12 12"/></svg>
+              </button>
+            </div>
+          </template>
+          <button @click="addBeneficiaryCategory()"
+                  class="rounded-[16px] border border-dashed border-[#d2d6db] p-4 flex items-center gap-2 text-sm text-[#4d5761] hover:border-[#1B8354] hover:text-[#1B8354] hover:bg-[#F3FCF6] transition-all">
+            <span class="text-lg leading-none">+</span>
+            إضافة فئة
+          </button>
+        </div>
+      </div>
+
+      {# ── الزيارات ── #}
+      <div class="rounded-[16px] bg-white p-6 shadow-[0px_4px_8px_-2px_rgba(16,24,40,0.10),0px_2px_4px_-2px_rgba(16,24,40,0.06)]">
+        <div class="flex items-center gap-2 mb-3">
+          <svg class="w-3.5 h-3.5 text-[#4d5761]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path stroke-linecap="round" d="M16 2v4M8 2v4M3 10h18"/></svg>
+          <h3 class="text-xs font-semibold text-[#4d5761] uppercase tracking-wide">الزيارات للجامعة</h3>
+        </div>
+        <div x-show="visits.length > 0" class="space-y-2 mb-4">
+          <template x-for="(v, i) in visits" :key="i">
+            <div class="flex items-center gap-3 text-sm bg-[#F3F4F6] rounded-[12px] px-4 py-3 group">
+              <span class="font-mono text-xs text-[#9DA4AE] w-24 flex-shrink-0" x-text="isoToDisplay(v.date)"></span>
+              <span class="text-[#1f2a37] flex-1" x-text="v.purpose"></span>
+              <button @click="visits.splice(i, 1)" class="text-red-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M6 18L18 6M6 6l12 12"/></svg>
+              </button>
+            </div>
+          </template>
+        </div>
+        <div class="flex items-center gap-2 flex-wrap">
+          <div class="w-[180px] flex-shrink-0">
+            {% include "admin_panel/partials/_date_picker.html" with field="newVisit.date" placeholder="تاريخ الزيارة" %}
+          </div>
+          <input type="text" x-model="newVisit.purpose" placeholder="وصف الزيارة"
+                 class="flex-1 min-w-[180px] bg-white border border-[#d2d6db] rounded-lg px-3 py-2 text-sm text-[#161616] focus:outline-none focus:border-[#1B8354] focus:ring-1 focus:ring-[#1B8354]/20 transition-all placeholder:text-[#9DA4AE]" />
+          <button @click="addVisit()" class="inline-flex items-center gap-1.5 px-4 py-2 rounded border border-[#1B8354] text-sm font-medium text-[#1B8354] hover:bg-[#F3FCF6] transition-colors flex-shrink-0">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14"/></svg>
+            إضافة
+          </button>
+        </div>
+      </div>
+
+      {# ── الأخبار ── #}
+      <div class="rounded-[16px] bg-white p-6 shadow-[0px_4px_8px_-2px_rgba(16,24,40,0.10),0px_2px_4px_-2px_rgba(16,24,40,0.06)]">
+        <div class="flex items-center gap-2 mb-3">
+          <svg class="w-3.5 h-3.5 text-[#4d5761]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 18h-5"/><path stroke-linecap="round" stroke-linejoin="round" d="M18 14h-8"/><path stroke-linecap="round" stroke-linejoin="round" d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-4 0v-9a2 2 0 0 1 2-2h2"/><rect width="8" height="4" x="10" y="6" rx="1"/></svg>
+          <h3 class="text-xs font-semibold text-[#4d5761] uppercase tracking-wide">الأخبار</h3>
+        </div>
+        <div x-show="news.length > 0" class="space-y-2 mb-4">
+          <template x-for="(n, i) in news" :key="i">
+            <div class="flex items-center gap-3 text-sm bg-[#F3F4F6] rounded-[12px] px-4 py-3 group">
+              <svg class="w-3.5 h-3.5 text-[#1B8354] flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17H7A5 5 0 0 1 7 7h2"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 7h2a5 5 0 1 1 0 10h-2"/><line stroke-linecap="round" x1="8" x2="16" y1="12" y2="12"/></svg>
+              <div class="flex-1 min-w-0">
+                <div class="font-medium text-[#161616] truncate" x-text="n.title"></div>
+                <a x-show="n.url" :href="n.url" target="_blank" rel="noreferrer" class="text-xs text-[#1B8354] hover:underline truncate block" x-text="n.url"></a>
+              </div>
+              <button @click="news.splice(i, 1)" class="text-red-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M6 18L18 6M6 6l12 12"/></svg>
+              </button>
+            </div>
+          </template>
+        </div>
+        <div class="flex items-center gap-2 flex-wrap">
+          <input type="text" x-model="newNews.title" placeholder="عنوان الخبر"
+                 class="flex-1 min-w-[160px] bg-white border border-[#d2d6db] rounded-lg px-3 py-2 text-sm text-[#161616] focus:outline-none focus:border-[#1B8354] focus:ring-1 focus:ring-[#1B8354]/20 transition-all placeholder:text-[#9DA4AE]" />
+          <input type="url" x-model="newNews.url" @input="newNews.url = $event.target.value.replace(/[^\x00-\x7F]/g, '')" placeholder="الرابط" dir="ltr"
+                 class="flex-1 min-w-[160px] text-right bg-white border border-[#d2d6db] rounded-lg px-3 py-2 text-sm text-[#161616] focus:outline-none focus:border-[#1B8354] focus:ring-1 focus:ring-[#1B8354]/20 transition-all placeholder:text-[#9DA4AE]" />
+          <button @click="addNews()" class="inline-flex items-center gap-1.5 px-4 py-2 rounded border border-[#1B8354] text-sm font-medium text-[#1B8354] hover:bg-[#F3FCF6] transition-colors flex-shrink-0">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14"/></svg>
+            إضافة
+          </button>
+        </div>
+      </div>
+
+      {# ── الإعلانات ── #}
+      <div class="rounded-[16px] bg-white p-6 shadow-[0px_4px_8px_-2px_rgba(16,24,40,0.10),0px_2px_4px_-2px_rgba(16,24,40,0.06)]">
+        <div class="flex items-center gap-2 mb-3">
+          <svg class="w-3.5 h-3.5 text-[#4d5761]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m3 11 18-5v12L3 14v-3z"/><path stroke-linecap="round" stroke-linejoin="round" d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>
+          <h3 class="text-xs font-semibold text-[#4d5761] uppercase tracking-wide">الإعلانات</h3>
+        </div>
+        <div x-show="announcements.length > 0" class="space-y-2 mb-4">
+          <template x-for="(a, i) in announcements" :key="i">
+            <div class="flex items-start gap-3 text-sm bg-[#F3F4F6] rounded-[12px] px-4 py-3 group">
+              <span class="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0 mt-1.5"></span>
+              <div class="flex-1 min-w-0">
+                <div class="text-[#1f2a37]" x-text="a.text"></div>
+                <a :href="a.url" target="_blank" rel="noreferrer" class="text-xs text-[#1B8354] hover:underline truncate block" x-text="a.url"></a>
+              </div>
+              <button @click="announcements.splice(i, 1)" class="text-red-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all flex-shrink-0">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M6 18L18 6M6 6l12 12"/></svg>
+              </button>
+            </div>
+          </template>
+        </div>
+        <div class="flex items-center gap-2 flex-wrap">
+          <input type="text" x-model="newAnnouncement.text" placeholder="نص الإعلان"
+                 class="flex-1 min-w-[160px] bg-white border border-[#d2d6db] rounded-lg px-3 py-2 text-sm text-[#161616] focus:outline-none focus:border-[#1B8354] focus:ring-1 focus:ring-[#1B8354]/20 transition-all placeholder:text-[#9DA4AE]" />
+          <input type="url" x-model="newAnnouncement.url" @input="newAnnouncement.url = $event.target.value.replace(/[^\x00-\x7F]/g, '')" placeholder="الرابط" dir="ltr"
+                 class="flex-1 min-w-[160px] text-right bg-white border border-[#d2d6db] rounded-lg px-3 py-2 text-sm text-[#161616] focus:outline-none focus:border-[#1B8354] focus:ring-1 focus:ring-[#1B8354]/20 transition-all placeholder:text-[#9DA4AE]" />
+          <button @click="addAnnouncement()" class="inline-flex items-center gap-1.5 px-4 py-2 rounded border border-[#1B8354] text-sm font-medium text-[#1B8354] hover:bg-[#F3FCF6] transition-colors flex-shrink-0">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14"/></svg>
+            إضافة
+          </button>
+        </div>
+      </div>
+
+      {# ── Save ── #}
+      <div class="flex items-center justify-end gap-3">
+        <span x-show="saveError" class="text-sm text-red-600" x-text="saveError"></span>
+        <button @click="saveGrant()" :disabled="saving" class="inline-flex items-center gap-2 h-11 px-8 rounded-lg bg-[#1B8354] text-white text-base font-semibold hover:bg-[#166A45] transition-colors disabled:opacity-60">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path stroke-linecap="round" stroke-linejoin="round" d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/><path stroke-linecap="round" stroke-linejoin="round" d="M7 3v4a1 1 0 0 0 1 1h7"/></svg>
+          <span x-text="saving ? 'جارٍ الحفظ...' : 'حفظ المنحة'"></span>
+        </button>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<script>
+function grantManagementPage() {
+  return {
+    donorsList: [],
+    beneficiariesList: [],
+    beneficiaryCategories: [],
+    form: {
+      title: '', date: '', type: 'مالي',
+      decisionNumber: '', decisionDate: '', decisionQtyCount: '', decisionQtyType: '',
+      donor: '', donorOther: '', beneficiary: '', amount: '', status: 'جارية',
+    },
+    beneficiaryCounts: [],
+    visits: [],
+    newVisit: { date: '', purpose: '' },
+    news: [],
+    newNews: { title: '', url: '' },
+    announcements: [],
+    newAnnouncement: { text: '', url: '' },
+    saving: false,
+    saveError: '',
+
+    init() {
+      this.donorsList = JSON.parse(document.getElementById('donors-list-data').textContent);
+      this.beneficiariesList = JSON.parse(document.getElementById('beneficiaries-list-data').textContent);
+      this.beneficiaryCategories = JSON.parse(document.getElementById('beneficiary-categories-data').textContent);
+      if (this.beneficiaryCategories.length) {
+        const first = this.beneficiaryCategories[0];
+        this.beneficiaryCounts = [{ category: first[0], categoryLabel: first[1], count: 0, other_label: '' }];
+      }
+    },
+
+    isoToDisplay(iso) {
+      if (!iso) return '';
+      const [y, m, d] = iso.split('-');
+      return `${d}/${m}/${y}`;
+    },
+    availableCategoriesFor(currentCategory) {
+      const used = new Set(this.beneficiaryCounts.map((b) => b.category));
+      return this.beneficiaryCategories.filter((c) => c[0] === currentCategory || !used.has(c[0]));
+    },
+    addBeneficiaryCategory() {
+      const used = new Set(this.beneficiaryCounts.map((b) => b.category));
+      const next = this.beneficiaryCategories.find((c) => !used.has(c[0]));
+      if (!next) return;
+      this.beneficiaryCounts.push({ category: next[0], categoryLabel: next[1], count: 0, other_label: '' });
+    },
+    addVisit() {
+      if (!this.newVisit.date || !this.newVisit.purpose.trim()) return;
+      this.visits.push({ ...this.newVisit });
+      this.newVisit = { date: '', purpose: '' };
+    },
+    addNews() {
+      if (!this.newNews.title.trim() || !this.newNews.url.trim()) return;
+      this.news.push({ title: this.newNews.title.trim(), url: this.newNews.url.trim() });
+      this.newNews = { title: '', url: '' };
+    },
+    addAnnouncement() {
+      if (!this.newAnnouncement.text.trim() || !this.newAnnouncement.url.trim()) return;
+      this.announcements.push({ text: this.newAnnouncement.text.trim(), url: this.newAnnouncement.url.trim() });
+      this.newAnnouncement = { text: '', url: '' };
+    },
+    csrfToken() {
+      return document.querySelector('#save-new-grant-form [name=csrfmiddlewaretoken]').value;
+    },
+    async saveGrant() {
+      this.saveError = '';
+      if (!this.form.title.trim()) { this.saveError = 'اكتب عنوان المنحة'; return; }
+      if (!this.form.donor) { this.saveError = 'اختر الجهة المانحة'; return; }
+      if (this.form.donor === '__other__' && !this.form.donorOther.trim()) { this.saveError = 'اكتب اسم الجهة المانحة'; return; }
+      if (!this.form.beneficiary) { this.saveError = 'اختر الجهة المستفيدة'; return; }
+
+      // إضافة تلقائية لأي بيانات مكتوبة في حقول الزيارات/الأخبار/الإعلانات ولم يُضغط لها زر "إضافة" بعد،
+      // حتى لا تُفقد عند الحفظ.
+      this.addVisit();
+      this.addNews();
+      this.addAnnouncement();
+
+      const body = new FormData();
+      body.append('csrfmiddlewaretoken', this.csrfToken());
+      body.append('title', this.form.title);
+      body.append('date', this.form.date);
+      body.append('type', this.form.type === 'عيني' ? 'عيني' : 'مالي');
+      body.append('decisionNumber', this.form.decisionNumber || '');
+      body.append('decisionDate', this.form.decisionDate || '');
+      body.append('decisionQuantityCount', this.form.decisionQtyCount || '');
+      body.append('decisionQuantityType', (this.form.decisionQtyType || '').trim());
+      body.append('donor_id', this.form.donor);
+      body.append('donor_other', this.form.donorOther || '');
+      body.append('beneficiary_id', this.form.beneficiary);
+      body.append('amount', this.form.amount || '0');
+      body.append('status', this.form.status);
+      body.append('counts_json', JSON.stringify(this.beneficiaryCounts.map((b) => ({ category: b.category, count: b.count, other_label: b.other_label || '' }))));
+      body.append('visits_json', JSON.stringify(this.visits));
+      body.append('news_json', JSON.stringify(this.news));
+      body.append('announcements_json', JSON.stringify(this.announcements));
+
+      this.saving = true;
+      try {
+        const res = await fetch(window.location.pathname, { method: 'POST', body });
+        if (!res.ok) throw new Error('save failed');
+        window.location.href = res.url;
+      } catch (e) {
+        this.saving = false;
+        this.saveError = 'تعذّر حفظ المنحة، يُرجى المحاولة مرة أخرى';
+      }
+    },
+  };
+}
+
+function datePicker(initialValue, onChange) {
+  const today = new Date();
+  return {
+    value: initialValue,
+    open: false,
+    viewYear: initialValue ? parseInt(initialValue.slice(0, 4)) : today.getFullYear(),
+    viewMonth: initialValue ? parseInt(initialValue.slice(5, 7)) - 1 : today.getMonth(),
+    monthsAr: ["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"],
+    daysAr: ["ح","ن","ث","ر","خ","ج","س"],
+
+    toggle() { this.open = !this.open; },
+    prevMonth() { if (this.viewMonth === 0) { this.viewMonth = 11; this.viewYear -= 1; } else this.viewMonth -= 1; },
+    nextMonth() { if (this.viewMonth === 11) { this.viewMonth = 0; this.viewYear += 1; } else this.viewMonth += 1; },
+    isoToDisplay(iso) {
+      if (!iso) return '';
+      const [y, m, d] = iso.split('-');
+      return `${d}/${m}/${y}`;
+    },
+    selectDay(day) {
+      const mm = String(this.viewMonth + 1).padStart(2, '0');
+      const dd = String(day).padStart(2, '0');
+      const iso = `${this.viewYear}-${mm}-${dd}`;
+      this.value = iso;
+      onChange(iso);
+      this.open = false;
+    },
+    selectToday() {
+      const now = new Date();
+      const mm = String(now.getMonth() + 1).padStart(2, '0');
+      const dd = String(now.getDate()).padStart(2, '0');
+      const iso = `${now.getFullYear()}-${mm}-${dd}`;
+      this.value = iso;
+      onChange(iso);
+      this.open = false;
+    },
+    get cells() {
+      const first = new Date(this.viewYear, this.viewMonth, 1).getDay();
+      const total = new Date(this.viewYear, this.viewMonth + 1, 0).getDate();
+      const arr = [];
+      for (let i = 0; i < first; i++) arr.push(null);
+      for (let d = 1; d <= total; d++) arr.push(d);
+      return arr;
+    },
+    isSelected(day) {
+      const mm = String(this.viewMonth + 1).padStart(2, '0');
+      const dd = String(day).padStart(2, '0');
+      return `${this.viewYear}-${mm}-${dd}` === this.value;
+    },
+    isToday(day) {
+      const t = new Date();
+      return day === t.getDate() && this.viewMonth === t.getMonth() && this.viewYear === t.getFullYear();
+    },
+  };
+}
+</script>
+{% endblock %}

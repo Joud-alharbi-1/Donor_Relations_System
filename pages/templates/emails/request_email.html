@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+<meta charset="UTF-8">
+</head>
+<body style="margin:0; padding:0; background-color:#f7fdf9; font-family: Tahoma, Arial, sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f7fdf9; padding:24px 0;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" dir="rtl" style="background-color:#ffffff; border-radius:12px; overflow:hidden; border:1px solid #d2d6db;">
+
+          {# هيدر بدون شعار - نص فقط #}
+          <tr>
+            <td style="background-color:#063e27; padding:20px 24px;">
+              <p style="margin:0; color:#ffffff; font-size:16px; font-weight:bold; text-align:right;">إدارة علاقات المانحين</p>
+              <p style="margin:4px 0 0; color:#b3dec7; font-size:12px; text-align:right;">جامعة الملك عبدالعزيز</p>
+            </td>
+          </tr>
+
+          {# عنوان الرسالة #}
+          <tr>
+            <td style="padding:20px 24px 8px;">
+              <p style="margin:0; color:#063e27; font-size:15px; font-weight:bold; text-align:right;">{{ title }}</p>
+            </td>
+          </tr>
+
+          {# جدول البيانات #}
+          <tr>
+            <td style="padding:8px 24px 24px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" dir="rtl" style="border:1px solid #d2d6db; border-radius:8px; overflow:hidden;">
+                {% for row in rows %}
+                <tr style="{% cycle 'background-color:#f7fdf9;' 'background-color:#ffffff;' %}">
+                  <td style="padding:10px 14px; font-size:12px; color:#4d5761; font-weight:bold; text-align:right; width:35%; border-bottom:1px solid #eef1f2; vertical-align:top;">{{ row.label }}</td>
+                  <td style="padding:10px 14px; font-size:13px; color:#1f2a37; text-align:right; border-bottom:1px solid #eef1f2; vertical-align:top;">{{ row.value|default:"—" }}</td>
+                </tr>
+                {% endfor %}
+              </table>
+            </td>
+          </tr>
+
+          {# فوتر بسيط #}
+          <tr>
+            <td style="padding:14px 24px; background-color:#f7fdf9; border-top:1px solid #d2d6db;">
+              <p style="margin:0; font-size:11px; color:#9ca3af; text-align:right;">تم إرسال هذه الرسالة تلقائياً من موقع إدارة علاقات المانحين.</p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

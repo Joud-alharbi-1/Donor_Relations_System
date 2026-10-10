@@ -1,0 +1,582 @@
+{% extends "admin_panel/base.html" %}
+{% block content %}
+{{ beneficiary_info|json_script:"bportal-beneficiary-data" }}
+{{ grants_data|json_script:"bportal-grants-data" }}
+{{ total_beneficiaries|json_script:"bportal-total-beneficiaries-data" }}
+{{ beneficiaries_list|json_script:"beneficiaries-list-data" }}
+{{ beneficiary_categories|json_script:"beneficiary-categories-data" }}
+
+<div dir="rtl" class="min-h-screen bg-[#f8f9fa]" style="font-family: 'IBM Plex Sans Arabic', sans-serif;"
+     x-data="beneficiaryPortalPage()" x-init="init()">
+  <form id="csrf-form" method="post" class="hidden">
+    {% csrf_token %}
+  </form>
+  {% if open_report_grant_id %}<div id="open-report-flag" data-id="{{ open_report_grant_id }}" class="hidden"></div>{% endif %}
+  {% if open_grant_id %}<div id="open-grant-flag" data-id="{{ open_grant_id }}" class="hidden"></div>{% endif %}
+  {% if open_items %}<div id="open-items-flag" class="hidden"></div>{% endif %}
+
+  <template x-if="!bData">
+    <div class="min-h-screen flex items-center justify-center">
+      <div class="text-center">
+        <p class="text-[#4d5761] text-sm mb-4">الجهة المستفيدة غير موجودة</p>
+        <a href="{% url 'beneficiary_management' %}" class="text-[#1B8354] text-sm hover:underline">← العودة للقائمة</a>
+      </div>
+    </div>
+  </template>
+
+  <template x-if="bData">
+    <div>
+      <main class="max-w-screen-lg mx-auto px-4 sm:px-8 py-10">
+
+        <a href="{% url 'beneficiary_management' %}" class="inline-flex items-center gap-1.5 text-sm text-[#4d5761] hover:text-[#1B8354] transition-colors mb-6">
+          <svg class="w-3.5 h-3.5" style="transform: rotate(180deg);" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m12 19-7-7 7-7"/><path stroke-linecap="round" stroke-linejoin="round" d="M19 12H5"/></svg>
+          الجهات المستفيدة
+        </a>
+
+        {# Identity card #}
+        <div class="rounded-[16px] bg-white p-6 shadow-[0px_4px_8px_-2px_rgba(16,24,40,0.10),0px_2px_4px_-2px_rgba(16,24,40,0.06)] mb-8 flex items-center justify-between gap-4">
+          <div class="flex items-center gap-4">
+            <div class="flex w-[56px] h-[56px] items-center justify-center rounded-full bg-[#F3FCF6] flex-shrink-0">
+              <span class="text-2xl font-bold text-[#1B8354]" x-text="bData.name.charAt(0)"></span>
+            </div>
+            <div class="flex-1">
+              <template x-if="beneficiaryEditMode">
+                <div class="flex flex-col gap-2">
+                  <input type="text" x-model="editBeneficiaryName" placeholder="اسم الجهة"
+                         class="w-full bg-white border border-[#d2d6db] rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-[#1B8354] focus:ring-1 focus:ring-[#1B8354]/20 transition-all font-bold text-[16px]" />
+                  <div class="flex items-center gap-2">
+                    <button @click="saveBeneficiaryEdit()" :disabled="savingBeneficiary" class="inline-flex items-center gap-1.5 h-7 px-3 rounded-lg bg-[#1B8354] text-white text-xs font-semibold hover:bg-[#14573a] transition-colors disabled:opacity-60">
+                      <span x-text="savingBeneficiary ? 'جارٍ الحفظ...' : 'حفظ'"></span>
+                    </button>
+                    <button @click="cancelBeneficiaryEdit()" class="inline-flex items-center gap-1.5 h-7 px-3 rounded-lg border border-[#d2d6db] text-xs font-medium text-[#161616] hover:bg-[#F3F4F6] transition-colors">
+                      إلغاء
+                    </button>
+                  </div>
+                </div>
+              </template>
+              <template x-if="!beneficiaryEditMode">
+                <div>
+                  <h1 class="text-[20px] font-bold text-[#161616] leading-7" x-text="bData.name"></h1>
+                  <p class="text-sm text-[#4d5761] mt-0.5">جهة مستفيدة داخلية - جامعة الملك عبدالعزيز</p>
+                </div>
+              </template>
+            </div>
+          </div>
+
+        </div>
+
+        {# Stats #}
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-8">
+          <template x-for="s in stats" :key="s.label">
+            <div class="rounded-[16px] bg-white p-6 shadow-[0px_4px_8px_-2px_rgba(16,24,40,0.10),0px_2px_4px_-2px_rgba(16,24,40,0.06)] flex items-center gap-4">
+              <div class="flex w-[48px] h-[48px] items-center justify-center rounded-full bg-[#F3FCF6] flex-shrink-0">
+                <span x-html="s.icon" class="w-5 h-5 text-[#1B8354]"></span>
+              </div>
+              <div>
+                <div class="text-[18px] font-bold text-[#1B8354] leading-7" x-text="s.value"></div>
+                <div class="text-sm text-[#4d5761]" x-text="s.label"></div>
+              </div>
+            </div>
+          </template>
+        </div>
+
+        {# Grants table #}
+        <div class="rounded-[16px] bg-white shadow-[0px_4px_8px_-2px_rgba(16,24,40,0.10),0px_2px_4px_-2px_rgba(16,24,40,0.06)] overflow-hidden">
+          <div class="flex items-center justify-between gap-3 px-6 py-4 border-b border-[#E5E7EB]">
+            <h2 class="text-base font-semibold text-[#161616]">منح الجهة</h2>
+            <div class="flex items-center gap-2">
+              <div class="relative">
+                <select x-model="grantSort" class="h-8 bg-white border border-[#E5E7EB] rounded-lg pr-2.5 pl-7 text-xs text-[#161616] focus:outline-none focus:border-[#1B8354] focus:ring-1 focus:ring-[#1B8354]/20 transition-all cursor-pointer appearance-none">
+                  <option value="" disabled>الترتيب</option>
+                  <option value="date-desc">التاريخ: الأحدث أولاً</option>
+                  <option value="date-asc">التاريخ: الأقدم أولاً</option>
+                  <option value="amount-desc">المبلغ: الأعلى أولاً</option>
+                  <option value="amount-asc">المبلغ: الأقل أولاً</option>
+                </select>
+                <svg class="absolute top-1/2 -translate-y-1/2 left-2 w-3 h-3 text-[#9DA4AE] pointer-events-none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6"/></svg>
+              </div>
+              <div class="inline-flex h-8 items-center gap-1 bg-[#f3fcf6] px-3 rounded-full">
+                <span class="text-sm font-medium text-[#14573a]"><span x-text="grants.length"></span> منح</span>
+              </div>
+            </div>
+          </div>
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="bg-[#F3F4F6] border-b border-[#E5E7EB]">
+                <th class="text-right px-6 py-3 text-xs font-semibold text-[#4d5761] w-10">م</th>
+                <th class="text-right px-4 py-3 text-xs font-semibold text-[#4d5761]">المنحة</th>
+                <th class="text-right px-4 py-3 text-xs font-semibold text-[#4d5761]">نوع المنحة</th>
+                <th class="text-right px-4 py-3 text-xs font-semibold text-[#4d5761]">الجهة المانحة</th>
+                <th class="text-right px-4 py-3 text-xs font-semibold text-[#4d5761]">المبلغ</th>
+                <th class="text-right px-4 py-3 text-xs font-semibold text-[#4d5761]">تقرير الأثر</th>
+                <th class="text-right px-4 py-3 text-xs font-semibold text-[#4d5761] w-10">تفاصيل المنحة</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-[#E5E7EB]">
+              <template x-for="(g, i) in sortedGrants" :key="g.id">
+                <tr @click="openGrant(g.id)" class="hover:bg-[#F3F4F6] transition-colors cursor-pointer group">
+                  <td class="px-6 py-4 text-xs font-mono text-[#9DA4AE]" x-text="String(i + 1).padStart(2, '0')"></td>
+                  <td class="px-4 py-4 font-semibold text-[#161616]">
+                    <div x-text="g.title"></div>
+                    <div class="text-xs text-[#4d5761] font-normal mt-0.5" x-text="isoToDisplay(g.date)"></div>
+                  </td>
+                  <td class="px-4 py-4">
+                    <div class="inline-flex h-8 items-center bg-[#f3fcf6] px-3 rounded-full">
+                      <span class="text-sm font-medium text-[#14573a]" x-text="g.type"></span>
+                    </div>
+                  </td>
+                  <td class="px-4 py-4">
+                    <div class="flex items-center gap-2">
+                      <div class="flex w-[32px] h-[32px] items-center justify-center rounded-full bg-[#F3FCF6] flex-shrink-0">
+                        <svg class="w-3.5 h-3.5 text-[#1B8354]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M22 10v6"/><path stroke-linecap="round" stroke-linejoin="round" d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"/></svg>
+                      </div>
+                      <span class="text-[#1f2a37]" x-text="g.donor"></span>
+                    </div>
+                  </td>
+                  <td class="px-4 py-4 text-sm font-medium text-[#1f2a37] whitespace-nowrap" x-text="g.amount + ' ﷼'"></td>
+                  <td class="px-4 py-4">
+                    <button @click.stop="openReportCard(g.id)"
+                            :class="g.reports.length > 0 ? 'border-[#1B8354] text-[#1B8354] hover:bg-[#1B8354] hover:text-white' : 'border-[#d2d6db] text-[#4d5761] hover:border-[#1B8354] hover:text-[#1B8354]'"
+                            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all whitespace-nowrap">
+                      <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
+                      <span x-text="g.reports.length > 0 ? 'عرض التقرير' : 'رفع تقرير'"></span>
+                    </button>
+                  </td>
+                  <td class="px-4 py-4">
+                    <svg class="w-4 h-4 text-[#4d5761] group-hover:text-[#1B8354] transition-colors" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m12 19-7-7 7-7"/><path stroke-linecap="round" stroke-linejoin="round" d="M19 12H5"/></svg>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+      </main>
+
+    </div>
+  </template>
+
+  {% include "admin_panel/partials/_grant_detail_modal.html" %}
+
+  {% include "admin_panel/partials/_grant_items_modal.html" %}
+
+  {% include "admin_panel/partials/_report_card_modal.html" %}
+</div>
+
+<script>
+function beneficiaryPortalPage() {
+  return {
+    bData: null,
+    grants: [],
+    totalBeneficiariesCount: 0,
+    grantSort: '',
+    reportSelected: null,
+    selectedReportIdx: 0,
+    reportFileName: '',
+    confirmingReportUpload: false,
+    uploadedReportId: null,
+
+    beneficiariesList: [],
+    beneficiaryCategories: [],
+    selected: null,
+    editMode: false,
+    snapshot: null,
+    saveFlash: false,
+    savingEdit: false,
+    newVisit: { date: '', purpose: '' },
+    newNews: { title: '', url: '' },
+    newAnn: { text: '', url: '' },
+    showAddVisit: false,
+    showAddNews: false,
+    showAddAnn: false,
+    deletedItemIds: [],
+    itemsModalOpen: false,
+    savingItems: false,
+    itemsSavedFlash: false,
+    savingCounts: false,
+    countsSavedFlash: false,
+
+    beneficiaryEditMode: false,
+    savingBeneficiary: false,
+    editBeneficiaryName: '',
+
+    init() {
+      this.bData = JSON.parse(document.getElementById('bportal-beneficiary-data').textContent);
+      this.grants = JSON.parse(document.getElementById('bportal-grants-data').textContent);
+      this.totalBeneficiariesCount = JSON.parse(document.getElementById('bportal-total-beneficiaries-data').textContent);
+      this.beneficiariesList = JSON.parse(document.getElementById('beneficiaries-list-data').textContent);
+      this.beneficiaryCategories = JSON.parse(document.getElementById('beneficiary-categories-data').textContent);
+      const openReportFlag = document.getElementById('open-report-flag');
+      if (openReportFlag) {
+        const rid = parseInt(openReportFlag.dataset.id, 10);
+        if (!isNaN(rid) && this.grants.some((g) => g.id === rid)) {
+          this.openReportCard(rid);
+        }
+      }
+      const uploadedParam = new URLSearchParams(window.location.search).get('uploaded');
+      if (uploadedParam) {
+        this.uploadedReportId = parseInt(uploadedParam, 10);
+        setTimeout(() => { this.uploadedReportId = null; }, 30000);
+      }
+      const openGrantFlag = document.getElementById('open-grant-flag');
+      if (openGrantFlag) {
+        const gid = parseInt(openGrantFlag.dataset.id, 10);
+        if (!isNaN(gid) && this.grants.some((g) => g.id === gid)) {
+          this.openGrant(gid);
+          if (new URLSearchParams(window.location.search).get('saved') === '1') {
+            this.saveFlash = true;
+            setTimeout(() => { this.saveFlash = false; }, 2500);
+          }
+          if (document.getElementById('open-items-flag')) {
+            this.itemsModalOpen = true;
+            if (new URLSearchParams(window.location.search).get('saved') === 'items') {
+              this.itemsSavedFlash = true;
+              setTimeout(() => { this.itemsSavedFlash = false; }, 2500);
+            }
+          }
+        }
+      }
+    },
+    csrfToken() {
+      return document.querySelector('#csrf-form [name=csrfmiddlewaretoken]').value;
+    },
+    enterBeneficiaryEdit() {
+      this.editBeneficiaryName = this.bData.name;
+      this.beneficiaryEditMode = true;
+    },
+    cancelBeneficiaryEdit() { this.beneficiaryEditMode = false; },
+    async saveBeneficiaryEdit() {
+      if (this.savingBeneficiary) return;
+      this.savingBeneficiary = true;
+      const body = new FormData();
+      body.append('csrfmiddlewaretoken', this.csrfToken());
+      body.append('form_type', 'save_beneficiary');
+      body.append('name', this.editBeneficiaryName.trim() || this.bData.name);
+      try {
+        const res = await fetch(window.location.pathname, { method: 'POST', body, headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+        const data = await res.json();
+        if (data.success) {
+          this.bData.name = data.name;
+          this.beneficiaryEditMode = false;
+        } else {
+          alert(data.error || 'تعذّر حفظ التعديل، يُرجى المحاولة مرة أخرى');
+        }
+      } catch (e) {
+        alert('تعذّر حفظ التعديل، يُرجى المحاولة مرة أخرى');
+      } finally {
+        this.savingBeneficiary = false;
+      }
+    },
+
+    isoToDisplay(iso) {
+      if (!iso) return '';
+      const [y, m, d] = iso.split('-');
+      return `${d}/${m}/${y}`;
+    },
+    decisionCombined(g) {
+      const parts = [];
+      if (g.decisionNumber) parts.push(`رقم ${g.decisionNumber}`);
+      if (g.decisionDate) parts.push(this.isoToDisplay(g.decisionDate));
+      if (g.type === 'عيني' && g.decisionQuantityCount) parts.push(`العدد ${g.decisionQuantityCount}`);
+      return parts.join('، ') || '—';
+    },
+
+    get grant() {
+      if (this.selected === null) return null;
+      return this.grants.find((g) => g.id === this.selected) || null;
+    },
+    availableCategoriesForGrant() {
+      if (!this.grant) return [];
+      const used = new Set(this.grant.beneficiaries.map((b) => b.category));
+      return this.beneficiaryCategories.filter((c) => !used.has(c[0]));
+    },
+    categoryOptionsFor(idx) {
+      const current = this.grant.beneficiaries[idx].category;
+      return this.beneficiaryCategories.filter((c) => c[0] === current || !this.grant.beneficiaries.some((b, i) => i !== idx && b.category === c[0]));
+    },
+    addBeneficiaryCategory() {
+      if (!this.grant || this.availableCategoriesForGrant().length === 0) return;
+      this.grant.beneficiaries.push({ category: '', categoryLabel: '', count: 0, other_label: '' });
+    },
+    removeBeneficiaryCategory(idx) {
+      this.grant.beneficiaries.splice(idx, 1);
+    },
+    changeBeneficiaryCategory(idx, newValue) {
+      const opt = this.beneficiaryCategories.find((c) => c[0] === newValue);
+      const b = this.grant.beneficiaries[idx];
+      if (opt) { b.category = opt[0]; b.categoryLabel = opt[1]; }
+      if (newValue !== 'other') { b.other_label = ''; }
+    },
+    async saveCountsCard() {
+      if (!this.grant) return;
+      const g = this.grant;
+      const body = new FormData();
+      body.append('csrfmiddlewaretoken', this.csrfToken());
+      body.append('form_type', 'save_counts');
+      body.append('grant_id', g.id);
+      (g.beneficiaries || []).forEach((b) => {
+        body.append('category', b.category);
+        body.append('count_value', b.count);
+        body.append('other_label', b.other_label || '');
+      });
+
+      this.savingCounts = true;
+      try {
+        const res = await fetch(window.location.pathname, {
+          method: 'POST', body,
+          headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        });
+        if (!res.ok) throw new Error('save failed');
+        const data = await res.json();
+        const idx = this.grants.findIndex((x) => x.id === g.id);
+        if (idx !== -1) this.grants[idx].beneficiaries = data.beneficiaries;
+        this.savingCounts = false;
+        this.countsSavedFlash = true;
+        setTimeout(() => { this.countsSavedFlash = false; }, 2500);
+      } catch (e) {
+        this.savingCounts = false;
+        alert('تعذّر حفظ التعديلات، يُرجى المحاولة مرة أخرى');
+      }
+    },
+    resetAddForms() {
+      this.newVisit = { date: '', purpose: '' };
+      this.newNews = { title: '', url: '' };
+      this.newAnn = { text: '', url: '' };
+      this.showAddVisit = false;
+      this.showAddNews = false;
+      this.showAddAnn = false;
+    },
+    openGrant(id) {
+      this.selected = id;
+      this.editMode = false;
+      this.snapshot = null;
+      this.saveFlash = false;
+      this.resetAddForms();
+    },
+    closeModal() {
+      this.selected = null;
+      this.editMode = false;
+      this.snapshot = null;
+      this.deletedItemIds = [];
+      this.itemsModalOpen = false;
+      this.itemsSavedFlash = false;
+      this.countsSavedFlash = false;
+      this.resetAddForms();
+    },
+    enterEdit() {
+      if (!this.grant) return;
+      this.snapshot = JSON.parse(JSON.stringify(this.grant));
+      this.editMode = true;
+      this.saveFlash = false;
+      this.deletedItemIds = [];
+      this.resetAddForms();
+    },
+    cancelEdit() {
+      if (this.snapshot) {
+        const idx = this.grants.findIndex((g) => g.id === this.snapshot.id);
+        if (idx !== -1) this.grants[idx] = JSON.parse(JSON.stringify(this.snapshot));
+      }
+      this.editMode = false;
+      this.snapshot = null;
+      this.deletedItemIds = [];
+      this.resetAddForms();
+    },
+    addItemToGrant() {
+      if (!this.grant) return;
+      if (this.grant.itemsLimit !== null && this.grant.items.length >= this.grant.itemsLimit) return;
+      this.grant.items.push({
+        uid: 'new_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+        id: null, item_type: 'صنف جديد', condition: 'new',
+        building: '', floor: '', room: '', model: '', serial_number: '',
+        attachment_name: '', attachment_url: '', _file: null, clear_attachment: false,
+      });
+    },
+    removeItemFromGrant(idx) {
+      const it = this.grant.items[idx];
+      if (it.id) this.deletedItemIds.push(it.id);
+      this.grant.items.splice(idx, 1);
+    },
+    handleItemFileChange(e, it) {
+      const file = e.target.files[0];
+      if (!file) return;
+      it._file = file;
+      it.attachment_name = file.name;
+      it.clear_attachment = false;
+    },
+    async saveEdit() {
+      if (!this.grant) return;
+      const g = this.grant;
+      const body = new FormData();
+      body.append('csrfmiddlewaretoken', this.csrfToken());
+      body.append('form_type', 'save_grant');
+      body.append('grant_id', g.id);
+      body.append('type', g.type);
+      body.append('date', g.date);
+      body.append('beneficiary_id', g.beneficiaryId);
+      body.append('decisionNumber', g.decisionNumber || '');
+      body.append('decisionDate', g.decisionDate || '');
+      body.append('decisionQuantityCount', g.decisionQuantityCount || '');
+      body.append('decisionQuantityType', g.decisionQuantityType || '');
+      body.append('amount', g.amount);
+      body.append('status', g.status);
+      body.append('visits_json', JSON.stringify(g.visits));
+      body.append('news_json', JSON.stringify(g.news));
+      body.append('announcements_json', JSON.stringify(g.announcements));
+
+      this.savingEdit = true;
+      try {
+        const res = await fetch(window.location.pathname, { method: 'POST', body });
+        if (!res.ok) throw new Error('save failed');
+        window.location.href = window.location.pathname + '?open=' + g.id + '&saved=1';
+      } catch (e) {
+        this.savingEdit = false;
+        alert('تعذّر حفظ التعديلات، يُرجى المحاولة مرة أخرى');
+      }
+    },
+    async saveItemsCard() {
+      if (!this.grant) return;
+      const g = this.grant;
+      const body = new FormData();
+      body.append('csrfmiddlewaretoken', this.csrfToken());
+      body.append('form_type', 'save_items');
+      body.append('grant_id', g.id);
+      body.append('items_json', JSON.stringify((g.items || []).map((it) => ({
+        id: it.id, uid: it.uid, item_type: it.item_type, condition: it.condition,
+        building: it.building, floor: it.floor, room: it.room, model: it.model,
+        serial_number: it.serial_number, clear_attachment: !!it.clear_attachment,
+      }))));
+      body.append('deleted_ids_json', JSON.stringify(this.deletedItemIds));
+      (g.items || []).forEach((it) => {
+        if (it._file instanceof File) body.append('file_' + it.uid, it._file);
+      });
+
+      this.savingItems = true;
+      try {
+        const res = await fetch(window.location.pathname, {
+          method: 'POST', body,
+          headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        });
+        if (!res.ok) throw new Error('save failed');
+        const data = await res.json();
+        const idx = this.grants.findIndex((x) => x.id === g.id);
+        if (idx !== -1) {
+          this.grants[idx].items = data.items;
+          this.grants[idx].itemsLimit = data.itemsLimit;
+        }
+        this.deletedItemIds = [];
+        this.savingItems = false;
+        this.itemsSavedFlash = true;
+        setTimeout(() => { this.itemsSavedFlash = false; }, 2500);
+      } catch (e) {
+        this.savingItems = false;
+        alert('تعذّر حفظ الأصناف، يُرجى المحاولة مرة أخرى');
+      }
+    },
+    addVisit() {
+      if (!this.newVisit.date || !this.newVisit.purpose.trim()) return;
+      this.grant.visits.push({ ...this.newVisit });
+      this.newVisit = { date: '', purpose: '' };
+      this.showAddVisit = false;
+    },
+    addNews() {
+      if (!this.newNews.title.trim() || !this.newNews.url.trim()) return;
+      this.grant.news.push({ title: this.newNews.title.trim(), url: this.newNews.url.trim() });
+      this.newNews = { title: '', url: '' };
+      this.showAddNews = false;
+    },
+    addAnnouncement() {
+      if (!this.newAnn.text.trim() || !this.newAnn.url.trim()) return;
+      this.grant.announcements.push({ text: this.newAnn.text.trim(), url: this.newAnn.url.trim() });
+      this.newAnn = { text: '', url: '' };
+      this.showAddAnn = false;
+    },
+    parseAmount(s) {
+      const n = parseInt(String(s).replace(/[^0-9]/g, ''), 10);
+      return isNaN(n) ? 0 : n;
+    },
+    get sortedGrants() {
+      const list = this.grants.slice();
+      if (!this.grantSort) return list;
+      return list.sort((a, b) => {
+        const pa = this.parseAmount(a.amount);
+        const pb = this.parseAmount(b.amount);
+        if (this.grantSort === 'amount-desc') return pb - pa;
+        if (this.grantSort === 'amount-asc') return pa - pb;
+        if (this.grantSort === 'date-asc') return (a.date || '').localeCompare(b.date || '');
+        if (this.grantSort === 'date-desc') return (b.date || '').localeCompare(a.date || '');
+        return 0;
+      });
+    },
+    get reportGrant() {
+      if (this.reportSelected === null) return null;
+      return this.grants.find((g) => g.id === this.reportSelected) || null;
+    },
+    get reportPreviewUrl() {
+      const r = this.reportGrant && this.reportGrant.reports[this.selectedReportIdx];
+      return r && r.url ? r.url + '#toolbar=0&navpanes=0&scrollbar=0' : '';
+    },
+    openReportCard(id) {
+      this.reportSelected = id;
+      const g = this.grants.find((x) => x.id === id);
+      this.selectedReportIdx = g && g.reports.length > 0 ? g.reports.length - 1 : 0;
+    },
+    closeReportCard() {
+      this.reportSelected = null;
+      this.reportFileName = '';
+      this.confirmingReportUpload = false;
+    },
+    cancelReportUpload() {
+      this.reportFileName = '';
+      this.confirmingReportUpload = false;
+      if (this.$refs.reportCardInput) this.$refs.reportCardInput.value = '';
+    },
+    async confirmReportUpload() {
+      const file = this.$refs.reportCardInput.files[0];
+      if (!file || !this.reportGrant) return;
+      const grantId = this.reportGrant.id;
+      const body = new FormData();
+      body.append('csrfmiddlewaretoken', this.csrfToken());
+      body.append('file', file);
+      body.append('next', window.location.pathname);
+      try {
+        const res = await fetch('{% url "upload_grant_report" grant_id=0 %}'.replace('/0/', '/' + grantId + '/'), { method: 'POST', body });
+        if (!res.ok) throw new Error('upload failed');
+        window.location.href = res.url;
+      } catch (err) {
+        this.confirmingReportUpload = false;
+        alert('تعذّر رفع التقرير، يُرجى المحاولة مرة أخرى');
+      }
+    },
+    async undoReportUpload() {
+      if (!this.uploadedReportId || !this.reportGrant) return;
+      const grantId = this.reportGrant.id;
+      const body = new FormData();
+      body.append('csrfmiddlewaretoken', this.csrfToken());
+      body.append('action', 'delete');
+      body.append('report_id', this.uploadedReportId);
+      body.append('next', window.location.pathname);
+      try {
+        const res = await fetch('{% url "upload_grant_report" grant_id=0 %}'.replace('/0/', '/' + grantId + '/'), { method: 'POST', body });
+        if (!res.ok) throw new Error('delete failed');
+        window.location.href = res.url;
+      } catch (err) {
+        alert('تعذّر التراجع عن الرفع، يُرجى المحاولة مرة أخرى');
+      }
+    },
+    get totalBeneficiaries() { return this.totalBeneficiariesCount; },
+    get totalAmount() {
+      return this.grants.reduce((sum, g) => sum + this.parseAmount(g.amount), 0);
+    },
+    get stats() {
+      return [
+        { label: 'إجمالي المنح المستلمة', value: String(this.grants.length),
+          icon: '<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m15.477 12.89 1.515 8.526a.5.5 0 0 1-.81.47l-3.58-2.687a1 1 0 0 0-1.197 0l-3.586 2.686a.5.5 0 0 1-.81-.469l1.514-8.526"/><circle cx="12" cy="8" r="6"/></svg>' },
+        { label: 'إجمالي المستفيدين', value: String(this.totalBeneficiaries),
+          icon: '<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path stroke-linecap="round" stroke-linejoin="round" d="M22 21v-2a4 4 0 0 0-3-3.87"/><path stroke-linecap="round" stroke-linejoin="round" d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>' },
+        { label: 'إجمالي مبلغ المنح المستلمة', value: this.totalAmount.toLocaleString('en-US') + ' ﷼',
+          icon: '<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line stroke-linecap="round" x1="18" x2="18" y1="20" y2="10"/><line stroke-linecap="round" x1="12" x2="12" y1="20" y2="4"/><line stroke-linecap="round" x1="6" x2="6" y1="20" y2="14"/></svg>' },
+      ];
+    },
+  };
+}
+</script>
+{% endblock %}

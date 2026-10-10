@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>نظام إدارة المنح | جامعة الملك عبدالعزيز</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind (نسخة معاينة سريعة عبر CDN — ليست إعداد الإنتاج النهائي) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    // نفس قيم استدارة الحواف المعرّفة بمشروع الريأكت الأصلي (src/styles/theme.css: --radius: 1rem)
+    // بدونها rounded-lg ترجع للقيمة الافتراضية لتايلويند (8px) بدل 16px الأصلية، وتبين المربعات مربعة أكثر من اللازم.
+    tailwind.config = {
+      theme: {
+        extend: {
+          borderRadius: {
+            sm: "12px",
+            md: "14px",
+            lg: "16px",
+            xl: "20px",
+          },
+        },
+      },
+    };
+  </script>
+
+  <!-- Alpine.js: يشغّل كل التفاعل بالصفحات (فلاتر، مودالات، تعديل...) بدل React -->
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+  <style>
+    [x-cloak] { display: none !important; }
+    body { font-family: 'IBM Plex Sans Arabic', sans-serif; }
+  </style>
+</head>
+<body class="bg-[#f8f9fa]">
+
+
+  <div class="border-b border-[#E5E7EB] bg-white" dir="rtl">
+    <div class="max-w-screen-lg mx-auto px-4 sm:px-8 flex items-center justify-between">
+      <div class="flex gap-1 overflow-x-auto">
+        {% url 'dashboard' as url_dashboard %}
+        {% url 'donor_management' as url_donors %}
+        {% url 'beneficiary_management' as url_beneficiaries %}
+        {% url 'grant_management' as url_grants %}
+        <a href="{{ url_dashboard }}" class="px-4 py-3 text-sm font-medium border-b-2 whitespace-nowrap transition-colors {% if request.path == url_dashboard %}text-[#1B8354] border-[#1B8354]{% else %}text-[#4d5761] border-transparent hover:text-[#161616]{% endif %}">لوحة التحكم</a>
+        <a href="{{ url_donors }}" class="px-4 py-3 text-sm font-medium border-b-2 whitespace-nowrap transition-colors {% if '/donors/' in request.path %}text-[#1B8354] border-[#1B8354]{% else %}text-[#4d5761] border-transparent hover:text-[#161616]{% endif %}">إدارة الجهات المانحة</a>
+        <a href="{{ url_beneficiaries }}" class="px-4 py-3 text-sm font-medium border-b-2 whitespace-nowrap transition-colors {% if '/beneficiaries/' in request.path %}text-[#1B8354] border-[#1B8354]{% else %}text-[#4d5761] border-transparent hover:text-[#161616]{% endif %}">إدارة الجهات المستفيدة</a>
+        <a href="{{ url_grants }}" class="px-4 py-3 text-sm font-medium border-b-2 whitespace-nowrap transition-colors {% if request.path == url_grants %}text-[#1B8354] border-[#1B8354]{% else %}text-[#4d5761] border-transparent hover:text-[#161616]{% endif %}">إضافة منحة</a>
+      </div>
+      <a href="{% url 'logout' %}" class="text-sm text-[#4d5761] hover:text-[#161616] whitespace-nowrap px-2">تسجيل الخروج</a>
+    </div>
+  </div>
+
+  {% block content %}{% endblock %}
+</body>
+</html>

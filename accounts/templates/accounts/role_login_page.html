@@ -1,0 +1,116 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>تسجيل الدخول</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @keyframes floatSlow { 0%,100% { transform: translate(0,0); } 50% { transform: translate(-14px,18px); } }
+    @keyframes floatSlow2 { 0%,100% { transform: translate(0,0); } 50% { transform: translate(16px,-14px); } }
+    .bg-circle-1 { animation: floatSlow 16s ease-in-out infinite; }
+    .bg-circle-2 { animation: floatSlow2 20s ease-in-out infinite; }
+  </style>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body dir="rtl" class="min-h-screen bg-white text-[#1f2a37]" style="font-family:'IBM Plex Sans Arabic',sans-serif;">
+
+  <div
+    x-data="{
+      role: '{{ active_role }}',
+      info: {
+        donor: { title: 'بوابة المانح', desc: 'يُرجى إدخال بيانات حساب الجهة المانحة لمتابعة المنح وأثرها.' },
+        beneficiary: { title: 'بوابة المستفيد', desc: 'يُرجى إدخال بيانات حساب الجهة المستفيدة لمتابعة المنح المستلمة.' },
+        manager: { title: 'بوابة الإداري', desc: 'يُرجى إدخال بيانات الحساب الإداري للوصول إلى لوحة الإدارة.' }
+      }
+    }"
+    x-init="info = info[role] || info.donor"
+    class="min-h-screen flex flex-col"
+  >
+    {# هيدر علوي #}
+    <div class="flex items-center justify-between px-8 py-4 border-b border-gray-100">
+      <img src="{% static 'images/logo-kau-header.png' %}" alt="جامعة الملك عبدالعزيز" width="160" height="90" class="object-contain">
+      <a href="{% url 'role_login' %}" class="flex items-center gap-1.5 text-sm font-medium text-[#4d5761] hover:text-[#063e27] transition-colors">
+        رجوع
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5L5 12L12 19"/></svg>
+      </a>
+    </div>
+
+    <div class="flex flex-1 flex-col md:flex-row-reverse">
+
+      {# لوحة الصورة (يمين الشاشة) — صورة الحرم الجامعي بتظليل أخضر #}
+      {% if active_role == "beneficiary" %}
+        {% static "images/campus/login-beneficiary.jpg" as bg_image %}
+      {% elif active_role == "manager" %}
+        {% static "images/campus/login-manager.jpg" as bg_image %}
+      {% else %}
+        {% static "images/campus/login-donor-v2.jpg" as bg_image %}
+      {% endif %}
+      <div class="hidden md:flex md:w-2/3 relative overflow-hidden items-center justify-center bg-cover bg-center" style="background-image:url('{{ bg_image }}');">
+        <div class="absolute inset-0" style="background:linear-gradient(to left, rgba(4,38,24,0.78) 0%, rgba(4,38,24,0.62) 100%);"></div>
+      </div>
+
+      {# بطاقة تسجيل الدخول (يسار الشاشة) #}
+      <div class="flex md:w-1/3 items-center justify-center px-6 py-16">
+        <div class="w-full max-w-sm">
+
+          <div class="mb-8 text-center md:text-right">
+            <h1 class="text-xl font-bold text-[#063e27] mb-2">تسجيل الدخول</h1>
+            <p class="text-sm text-[#4d5761]" x-text="info.desc"></p>
+          </div>
+
+          <form method="post" class="flex flex-col gap-5">
+            {% csrf_token %}
+            <input type="hidden" name="role" value="{{ active_role }}">
+
+            <div class="flex flex-col gap-1.5">
+              <label class="text-sm font-medium text-[#1f2a37]">اسم المستخدم</label>
+              <div class="relative">
+                <input type="text" name="username" required
+                       class="w-full h-12 pr-11 pl-4 text-sm rounded-xl border outline-none transition-colors focus:border-[#1b8354] focus:ring-2 focus:ring-[#1b8354]/15"
+                       style="border-color:#d2d6db;">
+                <span class="absolute inset-y-0 right-3 flex items-center text-[#9DA4AE]">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                </span>
+              </div>
+            </div>
+
+            <div class="flex flex-col gap-1.5">
+              <label class="text-sm font-medium text-[#1f2a37]">كلمة المرور</label>
+              <div class="relative">
+                <input type="password" name="password" required
+                       class="w-full h-12 pr-11 pl-4 text-sm rounded-xl border outline-none transition-colors focus:border-[#1b8354] focus:ring-2 focus:ring-[#1b8354]/15"
+                       style="border-color:#d2d6db;">
+                <span class="absolute inset-y-0 right-3 flex items-center text-[#9DA4AE]">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                </span>
+              </div>
+            </div>
+
+            <button type="submit" class="mt-2 h-12 rounded-xl text-white text-sm font-semibold transition-colors hover:bg-[#14573a]" style="background-color:#1b8354;">
+              تسجيل الدخول
+            </button>
+          </form>
+
+          {% if messages %}
+            {% for message in messages %}
+            <div class="flex items-center gap-3 px-4 py-3 rounded-xl mt-5" style="background-color:#fdf2f2; border:1px solid #f5c6c6;">
+              <span class="text-sm font-medium" style="color:#d4183d;">
+                {% if message.message == "wrong_role" %}هذا الحساب غير مسجّل بهذا الدور. تأكد من اختيار البطاقة الصحيحة
+                {% elif message.message == "invalid_credentials" %}اسم المستخدم أو كلمة المرور غير صحيحة
+                {% else %}{{ message }}{% endif %}
+              </span>
+            </div>
+            {% endfor %}
+          {% endif %}
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</body>
+</html>

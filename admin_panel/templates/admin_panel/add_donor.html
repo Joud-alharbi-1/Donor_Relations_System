@@ -1,0 +1,355 @@
+{% extends "admin_panel/base.html" %}
+{% block content %}
+
+<div dir="rtl" class="min-h-screen bg-[#f8f9fa]" style="font-family: 'IBM Plex Sans Arabic', sans-serif;"
+     x-data="addDonorForm()">
+  <form id="add-donor-form" method="post" enctype="multipart/form-data" class="hidden">
+    {% csrf_token %}
+  </form>
+
+  <main class="max-w-screen-lg mx-auto px-4 sm:px-8 py-10">
+
+    {# page header #}
+    <div class="mb-8">
+      <h1 class="text-[20px] font-bold text-[#161616]">إضافة جهة مانحة</h1>
+      <p class="text-sm text-[#4d5761] mt-1">تسجيل جهة مانحة أو شريك جديد في منظومة المنح الجامعية</p>
+    </div>
+
+    {# card #}
+    <div class="bg-white rounded-[16px] shadow-[0px_4px_8px_-2px_rgba(16,24,40,0.10),0px_2px_4px_-2px_rgba(16,24,40,0.06)] p-6 sm:p-8 max-w-2xl">
+
+      {# section label #}
+      <div class="flex items-center gap-2 mb-6 pb-4 border-b border-[#F3F4F6]">
+        <div class="w-7 h-7 rounded-full bg-[#F3FCF6] flex items-center justify-center flex-shrink-0">
+          <svg class="w-4 h-4 text-[#1B8354]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path stroke-linecap="round" stroke-linejoin="round" d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path stroke-linecap="round" stroke-linejoin="round" d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path stroke-linecap="round" stroke-linejoin="round" d="M10 6h4"/><path stroke-linecap="round" stroke-linejoin="round" d="M10 10h4"/><path stroke-linecap="round" stroke-linejoin="round" d="M10 14h4"/><path stroke-linecap="round" stroke-linejoin="round" d="M10 18h4"/></svg>
+        </div>
+        <span class="text-sm font-semibold text-[#161616]">بيانات الجهة</span>
+      </div>
+
+      <div class="space-y-5">
+
+        {# اسم الجهة #}
+        <div>
+          <label class="block text-xs font-medium text-[#4d5761] mb-1">
+            اسم الجهة <span class="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            x-model="name"
+            placeholder="مثال: شركة أرامكو السعودية"
+            :class="`w-full bg-white border rounded-lg px-3 py-2 text-sm text-[#161616] focus:outline-none focus:ring-1 transition-all placeholder:text-[#9DA4AE] ${errors.name ? 'border-red-400 focus:border-red-400 focus:ring-red-100' : 'border-[#d2d6db] focus:border-[#1B8354] focus:ring-[#1B8354]/20'}`"
+          />
+          <p class="mt-1 text-xs text-red-500" x-show="errors.name" x-text="errors.name"></p>
+        </div>
+
+        {# جهات التواصل #}
+        <div>
+          <label class="block text-xs font-medium text-[#4d5761] mb-1">جهات التواصل</label>
+          <div class="space-y-4">
+            <template x-for="(c, i) in contacts" :key="i">
+              <div class="relative border border-[#E5E7EB] rounded-lg p-4">
+                <button
+                  type="button"
+                  x-show="contacts.length > 1"
+                  @click="removeContact(i)"
+                  class="absolute top-3 left-3 text-[#9DA4AE] hover:text-red-500 transition-colors"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label class="block text-xs font-medium text-[#4d5761] mb-1">الاسم</label>
+                    <input
+                      type="text"
+                      x-model="c.name"
+                      placeholder="مثال: ماجد بالخير"
+                      class="w-full bg-white border border-[#d2d6db] rounded-lg px-3 py-2 text-sm text-[#161616] focus:outline-none focus:border-[#1B8354] focus:ring-1 focus:ring-[#1B8354]/20 transition-all placeholder:text-[#9DA4AE]"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-xs font-medium text-[#4d5761] mb-1">المنصب</label>
+                    <input
+                      type="text"
+                      x-model="c.title"
+                      placeholder="مثال: مدير العلاقات العامة"
+                      class="w-full bg-white border border-[#d2d6db] rounded-lg px-3 py-2 text-sm text-[#161616] focus:outline-none focus:border-[#1B8354] focus:ring-1 focus:ring-[#1B8354]/20 transition-all placeholder:text-[#9DA4AE]"
+                    />
+                  </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-xs font-medium text-[#4d5761] mb-1">البريد الإلكتروني</label>
+                    <input
+                      type="email"
+                      x-model="c.email"
+                      @input="c.email = $event.target.value.replace(/[^\x00-\x7F]/g, '')"
+                      placeholder="example@company.com"
+                      dir="ltr"
+                      :class="`w-full bg-white border rounded-lg px-3 py-2 text-sm text-[#161616] focus:outline-none focus:ring-1 transition-all placeholder:text-[#9DA4AE] ${errors['contactEmail-' + i] ? 'border-red-400 focus:border-red-400 focus:ring-red-100' : 'border-[#d2d6db] focus:border-[#1B8354] focus:ring-[#1B8354]/20'}`"
+                    />
+                    <p class="mt-1 text-xs text-red-500" x-show="errors['contactEmail-' + i]" x-text="errors['contactEmail-' + i]"></p>
+                  </div>
+                  <div>
+                    <label class="block text-xs font-medium text-[#4d5761] mb-1">رقم التواصل</label>
+                    <input
+                      type="tel"
+                      inputmode="tel"
+                      x-model="c.phone"
+                      @input="c.phone = $event.target.value.replace(/[^0-9+\-\s()]/g, '')"
+                      placeholder="مثال: 0112345678"
+                      dir="ltr"
+                      class="w-full bg-white border border-[#d2d6db] rounded-lg px-3 py-2 text-sm text-[#161616] focus:outline-none focus:border-[#1B8354] focus:ring-1 focus:ring-[#1B8354]/20 transition-all placeholder:text-[#9DA4AE]"
+                    />
+                  </div>
+                </div>
+              </div>
+            </template>
+          </div>
+          <button
+            type="button"
+            @click="addContact()"
+            class="mt-3 flex items-center gap-1.5 text-xs font-semibold text-[#1B8354] hover:text-[#14573a] transition-colors"
+          >
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14"/></svg>
+            إضافة جهة تواصل
+          </button>
+        </div>
+
+        {# شعار الجهة #}
+        <div>
+          <label class="block text-xs font-medium text-[#4d5761] mb-1">شعار الجهة</label>
+          <input
+            x-ref="fileInput"
+            type="file"
+            accept="image/*"
+            class="hidden"
+            @change="handleLogoChange($event)"
+          />
+
+          <template x-if="logoPreview">
+            <div class="flex items-center gap-4">
+              <div class="w-[72px] h-[72px] rounded-[12px] border border-[#E5E7EB] overflow-hidden bg-[#F9FAFB] flex items-center justify-center flex-shrink-0">
+                <img :src="logoPreview" alt="شعار الجهة" class="w-full h-full object-cover" />
+              </div>
+              <div class="flex flex-col gap-2">
+                <button
+                  type="button"
+                  @click="$refs.fileInput.click()"
+                  class="text-xs font-medium text-[#1B8354] hover:text-[#14573a] transition-colors"
+                >
+                  تغيير الشعار
+                </button>
+                <button
+                  type="button"
+                  @click="logoPreview = null; $refs.fileInput.value = ''"
+                  class="flex items-center gap-1 text-xs text-[#9DA4AE] hover:text-red-500 transition-colors"
+                >
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                  حذف
+                </button>
+              </div>
+            </div>
+          </template>
+          <template x-if="!logoPreview">
+            <button
+              type="button"
+              @click="$refs.fileInput.click()"
+              class="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-dashed border-[#d2d6db] bg-[#FAFAFA] text-sm text-[#4d5761] hover:border-[#1B8354] hover:text-[#1B8354] hover:bg-[#F3FCF6] transition-all"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline stroke-linecap="round" stroke-linejoin="round" points="17 8 12 3 7 8"/><line stroke-linecap="round" x1="12" x2="12" y1="3" y2="15"/></svg>
+              رفع الشعار
+            </button>
+          </template>
+          <p class="mt-1.5 text-[11px] text-[#9DA4AE]">يُقبل PNG أو JPG أو SVG، الحجم الأقصى 2 ميغابايت</p>
+        </div>
+
+      </div>
+
+      {# save button #}
+      <div class="mt-8 pt-5 border-t border-[#F3F4F6] flex items-center gap-3">
+        <button
+          type="button"
+          @click="handleSave()"
+          :disabled="saved"
+          :class="saved
+            ? 'flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-semibold transition-all bg-[#F3FCF6] text-[#1B8354] border border-[#1B8354]/30 cursor-default'
+            : 'flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-semibold transition-all bg-[#1B8354] text-white hover:bg-[#14573a] active:scale-[0.98]'"
+        >
+          <template x-if="saved">
+            <span class="flex items-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21.801 10A10 10 0 1 1 17 3.335"/><path stroke-linecap="round" stroke-linejoin="round" d="m9 11 3 3L22 4"/></svg>
+              تم الحفظ
+            </span>
+          </template>
+          <template x-if="!saved">
+            <span>حفظ الجهة</span>
+          </template>
+        </button>
+        <a
+          href="{% url 'donor_management' %}"
+          class="px-4 py-2.5 rounded-lg text-sm font-medium text-[#4d5761] hover:text-[#161616] hover:bg-[#F3F4F6] transition-colors"
+        >
+          إلغاء
+        </a>
+      </div>
+
+    </div>
+  </main>
+
+  {% include "admin_panel/partials/_logo_cropper.html" %}
+</div>
+
+<script>
+function addDonorForm() {
+  return {
+    name: '',
+    contacts: [{ name: '', title: '', email: '', phone: '' }],
+    logoPreview: null,
+    logoFile: null,
+    saved: false,
+    saving: false,
+    errors: {},
+
+    cropperOpen: false,
+    cropperImgUrl: null,
+    cropperZoom: 1,
+    cropperOffsetX: 0,
+    cropperOffsetY: 0,
+    cropperBaseScale: 1,
+    cropperNaturalW: 0,
+    cropperNaturalH: 0,
+    cropperDragging: false,
+    cropperDragStartX: 0,
+    cropperDragStartY: 0,
+    cropperStartOffsetX: 0,
+    cropperStartOffsetY: 0,
+
+    updateContact(index, field, value) {
+      this.contacts[index][field] = value;
+    },
+    addContact() {
+      this.contacts.push({ name: '', title: '', email: '', phone: '' });
+    },
+    removeContact(index) {
+      this.contacts.splice(index, 1);
+    },
+    handleLogoChange(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => { this.openCropper(reader.result); };
+      reader.readAsDataURL(file);
+      e.target.value = '';
+    },
+    openCropper(dataUrl) {
+      this.cropperImgUrl = dataUrl;
+      this.cropperZoom = 1;
+      this.cropperOffsetX = 0;
+      this.cropperOffsetY = 0;
+      const img = new Image();
+      img.onload = () => {
+        this.cropperNaturalW = img.naturalWidth;
+        this.cropperNaturalH = img.naturalHeight;
+        this.cropperBaseScale = 280 / Math.min(img.naturalWidth, img.naturalHeight);
+        this.cropperOpen = true;
+      };
+      img.src = dataUrl;
+    },
+    closeCropper() {
+      this.cropperOpen = false;
+      this.cropperImgUrl = null;
+    },
+    cropperClamp() {
+      const scale = this.cropperBaseScale * this.cropperZoom;
+      const dispW = this.cropperNaturalW * scale;
+      const dispH = this.cropperNaturalH * scale;
+      const maxX = Math.max(0, (dispW - 280) / 2);
+      const maxY = Math.max(0, (dispH - 280) / 2);
+      this.cropperOffsetX = Math.min(maxX, Math.max(-maxX, this.cropperOffsetX));
+      this.cropperOffsetY = Math.min(maxY, Math.max(-maxY, this.cropperOffsetY));
+    },
+    cropperStartDrag(e) {
+      this.cropperDragging = true;
+      const point = e.touches ? e.touches[0] : e;
+      this.cropperDragStartX = point.clientX;
+      this.cropperDragStartY = point.clientY;
+      this.cropperStartOffsetX = this.cropperOffsetX;
+      this.cropperStartOffsetY = this.cropperOffsetY;
+    },
+    cropperDrag(e) {
+      if (!this.cropperDragging) return;
+      const point = e.touches ? e.touches[0] : e;
+      this.cropperOffsetX = this.cropperStartOffsetX + (point.clientX - this.cropperDragStartX);
+      this.cropperOffsetY = this.cropperStartOffsetY + (point.clientY - this.cropperDragStartY);
+      this.cropperClamp();
+    },
+    cropperEndDrag() {
+      this.cropperDragging = false;
+    },
+    async confirmCrop() {
+      this.cropperClamp();
+      const size = 320;
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+      img.src = this.cropperImgUrl;
+      await new Promise((resolve) => { img.onload = resolve; });
+
+      const scale = this.cropperBaseScale * this.cropperZoom * (size / 280);
+      const dispW = this.cropperNaturalW * scale;
+      const dispH = this.cropperNaturalH * scale;
+      const dx = (size - dispW) / 2 + this.cropperOffsetX * (size / 280);
+      const dy = (size - dispH) / 2 + this.cropperOffsetY * (size / 280);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, size, size);
+      ctx.drawImage(img, dx, dy, dispW, dispH);
+
+      const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+      const uniqueName = `logo_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.png`;
+      this.logoFile = new File([blob], uniqueName, { type: 'image/png' });
+      this.logoPreview = canvas.toDataURL('image/png');
+      this.closeCropper();
+    },
+    validate() {
+      const errs = {};
+      if (!this.name.trim()) errs.name = 'اسم الجهة مطلوب';
+      this.contacts.forEach((c, i) => {
+        if (c.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(c.email)) {
+          errs['contactEmail-' + i] = 'البريد الإلكتروني غير صحيح';
+        }
+      });
+      return errs;
+    },
+    async handleSave() {
+      const errs = this.validate();
+      if (Object.keys(errs).length) { this.errors = errs; return; }
+      this.errors = {};
+      if (this.saving) return;
+      this.saving = true;
+
+      const body = new FormData();
+      body.append('csrfmiddlewaretoken', document.querySelector('#add-donor-form [name=csrfmiddlewaretoken]').value);
+      body.append('name', this.name.trim());
+      body.append('contacts_json', JSON.stringify(this.contacts.map(c => ({
+        name: c.name.trim(), title: c.title.trim(), email: c.email.trim(), phone: c.phone.trim(),
+      }))));
+      if (this.logoFile) body.append('logo', this.logoFile);
+
+      try {
+        const res = await fetch(window.location.pathname, { method: 'POST', body });
+        if (!res.ok) throw new Error('save failed');
+        this.saved = true;
+        window.location.href = res.url;
+      } catch (e) {
+        this.saving = false;
+        alert('تعذّر حفظ الجهة، يُرجى المحاولة مرة أخرى');
+      }
+    },
+  };
+}
+</script>
+
+{% endblock %}

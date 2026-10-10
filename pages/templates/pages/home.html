@@ -1,0 +1,411 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}عن الإدارة | إدارة علاقات المانحين{% endblock %}
+
+{% block content %}
+
+{# ===== شريط العنوان ===== #}
+<div class="bg-white">
+  <div class="flex flex-col gap-4 px-4 md:px-8 py-6 bg-[#F7FDF9]">
+    <h1 class="w-full font-bold text-3xl md:text-4xl text-[#063e27] container mx-auto">
+      إدارة علاقات المانحين
+    </h1>
+  </div>
+</div>
+
+{# ===== الهيرو ===== #}
+<div class="w-full mt-4" style="height:380px;">
+  <img src="{% static 'images/hero-building.png' %}" alt="مبنى جامعة الملك عبد العزيز" class="w-full h-full object-cover">
+</div>
+
+{# ===== لمحة عامة ===== #}
+<section class="relative isolate overflow-hidden">
+  <div class="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(135deg,rgba(243,252,246,0.76),rgba(255,255,255,0.9)_48%,rgba(249,250,251,0.94))]"></div>
+  <div class="mx-auto grid w-full max-w-7xl items-start gap-8 px-4 py-6 sm:px-6 sm:py-8 lg:grid-cols-[minmax(0,1.08fr)_minmax(0,0.92fr)] lg:gap-12 lg:px-8">
+
+    <div class="order-2 bg-white p-6 sm:p-8 lg:order-1 lg:p-10">
+      <div class="flex items-center gap-3 mb-6">
+        <div class="w-1 h-7 rounded-full bg-[#063e27]"></div>
+        <h2 class="text-2xl font-bold text-[#063e27]">لمحة عامة</h2>
+      </div>
+      <p class="mt-4 text-base leading-8 text-[#384250] sm:text-lg text-justify">
+        أُنشئت إدارة علاقات المانحين بجامعة الملك عبد العزيز بموجب القرار الإداري رقم (6182/ق) بتاريخ 24/06/1446هـ الموافق 25/12/2024م، انطلاقًا من توجه الجامعة نحو تعزيز الحوكمة المؤسسية في إدارة المنح والتبرعات، وتنظيم العلاقة مع الجهات المانحة، بما يضمن تحقيق أعلى معايير الشفافية والامتثال، ويسهم في دعم رسالة الجامعة وأهدافها الاستراتيجية.
+      </p>
+      <p class="mt-4 text-base leading-8 text-[#384250] sm:text-lg text-justify">
+        تهدف الإدارة إلى تعزيز الثقة مع الجهات المانحة من خلال المحافظة على حقوقها، وإبراز أثر مساهماتها في دعم التعليم، والبحث العلمي والابتكار، وخدمة المجتمع، مما يحقق الاستدامة في الشراكات، بالإضافة إلى تعزيز كفاءة إدارة المنح، وتطبيق أفضل الممارسات في الحوكمة والإفصاح وقياس الأثر، بما يدعم الأولويات التنموية للجامعة ويعزز دورها في خدمة المجتمع والإسهام في تحقيق التنمية المستدامة.
+      </p>
+    </div>
+
+    <div class="order-1 relative lg:order-2 lg:pt-[108px]">
+      <div class="absolute -bottom-3 -end-3 hidden h-28 w-28 rounded-lg bg-[#f3fcf6] sm:block"></div>
+      <div class="group relative w-full overflow-hidden rounded-lg border border-[#d2d6db] bg-[#f3f4f6] shadow-sm" style="height:320px;">
+        <img src="{% static 'images/kau-building-1.jpg' %}" alt="إدارة علاقات المانحين"
+             class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]">
+      </div>
+    </div>
+
+  </div>
+</section>
+
+{# ===== رحلة المانح ===== #}
+<div dir="rtl" class="w-full bg-white px-6 py-12">
+  <div class="max-w-7xl mx-auto">
+    <div class="flex items-center gap-3 mb-8">
+      <div class="w-1 h-7 rounded-full bg-[#063e27]"></div>
+      <h2 class="text-2xl font-bold text-[#063e27]">رحلة المانح</h2>
+    </div>
+
+    {# الرسم الدائري — ثابت بلا حالة، لذا يُكتب كـ SVG عادي بلا Alpine #}
+    <div class="hidden md:block mb-8">
+      <div class="relative w-full mx-auto" style="max-width:900px;aspect-ratio:900 / 580;">
+        <svg class="w-full h-full" viewBox="0 0 900 580" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <filter id="centerShadow" x="-40%" y="-40%" width="180%" height="180%">
+              <feDropShadow dx="0" dy="3" stdDeviation="10" flood-color="rgba(27,131,84,0.4)"/>
+            </filter>
+            <radialGradient id="bgGrad" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="#eef6f1"/>
+              <stop offset="100%" stop-color="#f0f2f5" stop-opacity="0"/>
+            </radialGradient>
+          </defs>
+          <circle cx="450" cy="290" r="240" fill="url(#bgGrad)"/>
+          <circle cx="450" cy="290" r="228" fill="none" stroke="#c5d5cc" stroke-width="0.5"/>
+
+          <path d="M 467,91 A 200,200 0 0,1 614,175" fill="none" stroke="#B3DEC7" stroke-width="4" stroke-linecap="round" opacity="0.9"/>
+          <path d="M 631,206 A 200,200 0 0,1 631,374" fill="none" stroke="#5AB379" stroke-width="4" stroke-linecap="round" opacity="0.9"/>
+          <path d="M 614,405 A 200,200 0 0,1 467,489" fill="none" stroke="#31715F" stroke-width="4" stroke-linecap="round" opacity="0.9"/>
+          <path d="M 433,489 A 200,200 0 0,1 286,405" fill="none" stroke="#6B7787" stroke-width="4" stroke-linecap="round" opacity="0.9"/>
+          <path d="M 269,374 A 200,200 0 0,1 269,206" fill="none" stroke="#17343D" stroke-width="4" stroke-linecap="round" opacity="0.9"/>
+          <path d="M 286,175 A 200,200 0 0,1 433,91" fill="none" stroke="#D7CF60" stroke-width="4" stroke-linecap="round" opacity="0.9"/>
+
+          <circle cx="450" cy="290" r="200" fill="none" stroke="rgba(0,0,0,0.05)" stroke-width="1"/>
+
+          <line x1="450" y1="290" x2="563" y2="117" stroke="#c8d8d0" stroke-width="0.8"/>
+          <line x1="450" y1="290" x2="650" y2="290" stroke="#c8d8d0" stroke-width="0.8"/>
+          <line x1="450" y1="290" x2="563" y2="463" stroke="#c8d8d0" stroke-width="0.8"/>
+          <line x1="450" y1="290" x2="337" y2="463" stroke="#c8d8d0" stroke-width="0.8"/>
+          <line x1="450" y1="290" x2="250" y2="290" stroke="#c8d8d0" stroke-width="0.8"/>
+          <line x1="450" y1="290" x2="337" y2="117" stroke="#c8d8d0" stroke-width="0.8"/>
+
+          <circle cx="450" cy="290" r="90" fill="none" stroke="#1b8354" stroke-width="0.6" stroke-opacity="0.18"/>
+          <circle cx="450" cy="290" r="80" fill="none" stroke="#1b8354" stroke-width="0.8" stroke-opacity="0.28"/>
+          <circle cx="450" cy="290" r="72" fill="#1b8354" filter="url(#centerShadow)"/>
+          <text x="450" y="297" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="24" font-weight="700" font-family="IBM Plex Sans Arabic, sans-serif">رحلة المانح</text>
+
+          {% for step in program_steps %}
+          <g>
+            <circle cx="{{ step.cx }}" cy="{{ step.cy }}" r="44" fill="{{ step.color }}"/>
+            <text x="{{ step.cx }}" y="{{ step.cy|add:12 }}" text-anchor="middle" fill="white" font-size="34" font-weight="700" font-family="IBM Plex Sans Arabic, sans-serif">{{ forloop.counter }}</text>
+            <foreignObject x="{{ step.lx }}" y="{{ step.ly }}" width="{{ step.lw }}" height="{{ step.lh }}">
+              <div xmlns="http://www.w3.org/1999/xhtml" dir="rtl" style="font-family:IBM Plex Sans Arabic, sans-serif;text-align:center;">
+                <p style="font-size:16px;font-weight:700;color:#1f2a37;margin-bottom:3px;line-height:1.3;">{{ step.title }}</p>
+                <p style="font-size:11px;color:#4d5761;line-height:1.35;">{{ step.desc }}</p>
+              </div>
+            </foreignObject>
+          </g>
+          {% endfor %}
+        </svg>
+      </div>
+    </div>
+
+    {# نسخة الجوال #}
+    <div class="md:hidden grid grid-cols-2 gap-3 mb-8">
+      {% for step in program_steps %}
+      <div class="flex items-start gap-3 bg-white rounded-xl p-3 border" style="border-color:#d2d6db;">
+        <div class="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold shrink-0" style="background-color:{{ step.color }};">
+          {{ forloop.counter }}
+        </div>
+        <div>
+          <p class="text-xs font-bold mb-0.5" style="color:#1f2a37;">{{ step.title }}</p>
+          <p class="text-xs leading-relaxed" style="color:#4d5761;">{{ step.desc }}</p>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    {# بطاقة الكتيّب #}
+    <div class="mt-16 flex justify-center">
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-5 w-full max-w-2xl rounded-2xl px-7 py-5"
+           style="background-color:#f0f9f4;border:1px solid #d1ead9;box-shadow:0px 4px 8px -2px rgba(16,24,40,0.08),0px 2px 4px -2px rgba(16,24,40,0.04);">
+        <div class="flex items-center gap-4">
+          <div class="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style="background-color:#d4ede0;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1b8354" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
+            </svg>
+          </div>
+          <div>
+            <p class="text-sm font-semibold" style="color:#1f2a37;">كتيّب رحلة المانح</p>
+            <p class="text-xs mt-0.5" style="color:#4d5761;">لمزيد من التفاصيل حول مراحل رحلة المانح</p>
+          </div>
+        </div>
+        <a href="https://online.fliphtml5.com/nlilb/algb/" target="_blank" rel="noopener noreferrer"
+           class="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-2xl text-sm font-medium transition-colors shrink-0"
+           style="color:#1b8354;background-color:white;box-shadow:0px 4px 8px -2px rgba(16,24,40,0.10),0px 2px 4px -2px rgba(16,24,40,0.06);border:1px solid #e9edf0;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          تحميل الكتيّب
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# ===== الرؤية والرسالة — التبويب الوحيد الذي يحتاج تفاعل فعلي ===== #}
+<section class="py-12 bg-white" x-data="{ activeTab: 'vision' }">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="flex items-center gap-3 mb-6">
+      <div class="w-1 h-7 rounded-full bg-[#063e27]"></div>
+      <h2 class="text-2xl font-bold text-[#063e27]">الرؤية والرسالة</h2>
+    </div>
+    <div class="overflow-hidden rounded-2xl border border-[#D7E6DF] bg-white shadow-sm">
+
+      {# شريط التبويبات #}
+      <div class="overflow-x-auto border-b border-[#D7E6DF] bg-[#F8FBF9] px-4">
+        <div class="flex items-center" dir="rtl">
+          <div class="relative inline-flex items-center">
+            <div class="absolute right-0 bottom-0 left-0 h-[3px] rounded-full bg-[#d2d6db]"></div>
+
+            <button type="button" role="tab" @click="activeTab = 'vision'"
+                    :aria-selected="activeTab === 'vision'"
+                    class="relative flex items-center justify-center gap-1 rounded-sm p-4 focus:outline-none">
+              <span class="text-sm leading-5 whitespace-nowrap"
+                    :class="activeTab === 'vision' ? 'font-bold text-[#161616]' : 'font-medium text-[#384250]'">الرؤية</span>
+              <span x-show="activeTab === 'vision'" class="absolute right-0 bottom-0 left-0 px-4">
+                <span class="block h-[3px] w-full rounded-full bg-[#1b8354]"></span>
+              </span>
+            </button>
+
+            <button type="button" role="tab" @click="activeTab = 'mission'"
+                    :aria-selected="activeTab === 'mission'"
+                    class="relative flex items-center justify-center gap-1 rounded-sm p-4 focus:outline-none">
+              <span class="text-sm leading-5 whitespace-nowrap"
+                    :class="activeTab === 'mission' ? 'font-bold text-[#161616]' : 'font-medium text-[#384250]'">الرسالة</span>
+              <span x-show="activeTab === 'mission'" class="absolute right-0 bottom-0 left-0 px-4">
+                <span class="block h-[3px] w-full rounded-full bg-[#1b8354]"></span>
+              </span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {# محتوى التبويب #}
+      <div class="p-6 sm:p-8">
+        <div class="grid grid-cols-1">
+          <div class="col-start-1 row-start-1 transition-all duration-300 ease-out"
+               x-show="activeTab === 'vision'" x-transition>
+            <div class="flex gap-5 sm:gap-6">
+              <div class="min-w-0 flex-1">
+                <h3 class="pt-1 text-2xl font-bold leading-tight text-[#063B2A] sm:text-3xl mb-4">الرؤية</h3>
+                <p class="text-base leading-8 text-slate-600 sm:text-lg">
+                  أن نكون نموذجًا وطنيًا رائدًا في بناء علاقات قائمة على منفعة متبادلة ومستدامة بين الجامعة والمانحين.
+                </p>
+              </div>
+            </div>
+          </div>
+          <div class="col-start-1 row-start-1 transition-all duration-300 ease-out"
+               x-show="activeTab === 'mission'" x-transition>
+            <div class="flex gap-5 sm:gap-6">
+              <div class="min-w-0 flex-1">
+                <h3 class="pt-1 text-2xl font-bold leading-tight text-[#063B2A] sm:text-3xl mb-4">الرسالة</h3>
+                <p class="text-base leading-8 text-slate-600 sm:text-lg">
+                  تحقيق الأثر المجتمعي المستدام من خلال تعزيز العلاقة مع المانحين وتقديرهم وتمكينهم بما يساهم في تعزيز سمعة الجامعة ويعود بالفائدة على الجوانب الأكاديمية والبحثية والمجتمعية.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{# ===== الأهداف ===== #}
+<section class="relative isolate overflow-hidden">
+  <div class="pointer-events-none absolute inset-0 -z-10 bg-white"></div>
+  <div class="mx-auto grid w-full max-w-7xl items-start gap-8 px-6 py-12 lg:gap-12 lg:grid-cols-[minmax(0,1.08fr)_minmax(0,0.92fr)]">
+
+    <div class="py-6 sm:py-8 lg:py-10">
+      <div class="flex items-center gap-3 mb-2">
+        <div class="w-1 h-7 rounded-full bg-[#063e27]"></div>
+        <h2 class="text-2xl font-bold text-[#063e27]">الأهداف</h2>
+      </div>
+      <ul class="mt-8 grid gap-3">
+        {% for goal in goals %}
+        <li class="flex min-w-0 items-center gap-3 rounded-lg border border-[#d2d6db] bg-[#f9fafb] px-4 py-3 shadow-sm transition duration-200 hover:border-[#1B8354]/40 hover:bg-[#f3fcf6]">
+          <span class="inline-flex size-10 shrink-0 items-center justify-center rounded-full" style="background-color:#f3fcf6;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1b8354" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          </span>
+          <span class="min-w-0 text-sm font-medium leading-6 text-[#161616]">{{ goal }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+
+    <div class="relative flex flex-col" style="padding-top:6.75rem;padding-bottom:5rem;">
+      <div class="relative overflow-hidden rounded-lg border border-[#d2d6db] bg-[#f3f4f6] shadow-sm" style="min-height:280px;">
+        <img src="{% static 'images/kau-building-1.jpg' %}" alt="الأهداف"
+             class="w-full object-cover transition duration-500 hover:scale-[1.03]" style="display:block;height:300px;">
+      </div>
+    </div>
+
+  </div>
+</section>
+
+{# ===== أحدث الأخبار — تمرير مستمر بـ CSS فقط، مكتوب داخل الصفحة نفسها حتى ما يعتمد على تحميل ملف خارجي ===== #}
+<style>
+  @keyframes marqueeRTL {
+    from { transform: translateX(0); }
+    to   { transform: translateX(50%); }
+  }
+  .news-track {
+    display: flex;
+    gap: 20px;
+    width: max-content;
+    animation: marqueeRTL 28s linear infinite;
+  }
+  .news-track:hover { animation-play-state: paused; }
+</style>
+<section class="w-full py-12 bg-white overflow-hidden">
+  <div class="max-w-7xl mx-auto px-6 mb-8">
+    <div class="flex items-end justify-between">
+      <div>
+        <div class="flex items-center gap-3 mb-2">
+          <div class="w-1 h-7 rounded-full bg-[#063e27]"></div>
+          <h2 class="text-2xl font-bold text-[#063e27]">أحدث الأخبار والمنح</h2>
+        </div>
+        <p class="text-base pr-4" style="color:#4d5761;">تابع آخر أخبار إدارة علاقات المانحين ومستجداتها</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="overflow-hidden rounded-2xl py-5" style="border:1.5px solid #b6cec4;">
+      <div class="news-track">
+        {# تُكرَّر القائمة مرتين ليستمر شريط التمرير بلا فجوة، تمامًا كما في React #}
+        {% for item in news_items_loop %}
+        <article class="flex flex-col gap-4 rounded-2xl bg-white p-4 border cursor-pointer group transition-shadow hover:shadow-lg shrink-0"
+                 style="width:280px;border-color:#d2d6db;box-shadow:0px 4px 8px -2px rgba(16,24,40,0.10),0px 2px 4px -2px rgba(16,24,40,0.06);">
+          <div class="relative overflow-hidden rounded-xl h-[180px] bg-gray-100">
+            <img src="{{ item.img }}" alt="{{ item.title }}"
+                 class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                 loading="lazy" referrerpolicy="no-referrer">
+            <span class="absolute top-3 right-3 inline-flex h-7 items-center px-2.5 rounded-full text-xs font-medium"
+                  style="background-color:#f3fcf6;color:#14573a;">{{ item.tag }}</span>
+          </div>
+          <div class="space-y-2">
+            <p class="text-sm" style="color:#4d5761;">{{ item.date }}</p>
+            <h3 class="text-base font-bold leading-6 line-clamp-2" style="color:#1f2a37;">{{ item.title }}</h3>
+            <p class="text-sm leading-6 line-clamp-2" style="color:#4d5761;">{{ item.desc }}</p>
+          </div>
+          <a href="{{ item.link|default:'#' }}" {% if item.link %}target="_blank" rel="noopener noreferrer"{% endif %} class="text-base font-normal hover:underline flex items-center gap-1" style="color:#1b8354;">
+            اقرأ المزيد
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          </a>
+        </article>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</section>
+
+{# ===== مصادر مفيدة ===== #}
+<section class="py-12 bg-white">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="flex items-center gap-3 mb-8">
+      <div class="w-1 h-7 rounded-full bg-[#063e27]"></div>
+      <h2 class="text-2xl font-bold text-[#063e27]">مصادر مفيدة</h2>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      {% for card in resource_cards %}
+      <div class="group bg-white rounded-2xl overflow-hidden shadow hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+        <div class="relative h-48 overflow-hidden">
+          <img src="{{ card.img }}" alt="{{ card.title }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+          <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+          <div class="absolute bottom-4 right-4 text-white flex items-center gap-2">
+            <div class="p-2 bg-emerald-500 rounded-full w-10 h-10 flex justify-center items-center shrink-0">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+            </div>
+            <h3 class="text-base font-bold leading-snug">{{ card.title }}</h3>
+          </div>
+        </div>
+        <div class="p-5">
+          <a href="#" class="inline-flex items-center gap-1 font-medium text-sm transition-colors" style="color:#1b8354;">
+            <span>للمزيد</span>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+          </a>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+{# ===== شركاء العطاء — أثر الهوفر المتدرّج بجيران البطاقة، مكتوب بـ Alpine ===== #}
+<section class="w-full py-12 px-4 bg-white"
+         x-data="{ hovered: null,
+                    scaleFor(i){ if(this.hovered===null) return 1;
+                                 const d=Math.abs(i-this.hovered);
+                                 if(d===0) return 1.35; if(d===1) return 1.12; if(d===2) return 1.04; return 1; },
+                    shadowFor(i){ return this.hovered===i ? '0px 10px 28px rgba(16,24,40,0.18)' : '0px 1px 4px rgba(16,24,40,0.08)'; } }">
+  <div class="max-w-7xl mx-auto">
+    <div class="mb-10">
+      <h2 class="text-3xl font-bold text-center text-[#063e27]">شركاء العطاء</h2>
+    </div>
+    <div class="flex flex-wrap justify-center gap-[10px]" style="overflow:visible;">
+      {% for logo in partners %}
+      <div class="bg-white rounded-xl cursor-pointer overflow-hidden relative"
+           style="flex:0 0 calc((100% - {{ partners_gap_total }}px) / {{ partners_cols }});
+                  aspect-ratio:4/3; border:1px solid #f0f0f0; transition:transform 200ms cubic-bezier(0.34,1.56,0.64,1), box-shadow 200ms ease; will-change:transform;"
+           :style="{ transform: 'scale(' + scaleFor({{ forloop.counter0 }}) + ')', boxShadow: shadowFor({{ forloop.counter0 }}), zIndex: (hovered==={{ forloop.counter0 }} ? 10 : 1) }"
+           @mouseenter="hovered = {{ forloop.counter0 }}" @mouseleave="hovered = null">
+        {% if logo.label %}
+        <div class="absolute inset-0 flex items-center justify-center p-3 text-center">
+          <span style="font-family:Amiri, serif;font-size:clamp(11px, 1.3vw, 15px);font-weight:700;color:#14573a;line-height:1.6;text-align:center;">{{ logo.label }}</span>
+        </div>
+        {% else %}
+        <img src="{{ logo.src }}" alt="{{ logo.alt }}"
+             style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:center;padding:{% if logo.aspect == 'wide' %}12px 16px{% else %}10px{% endif %};">
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+{# ===== تواصل معنا ===== #}
+<section class="py-12" style="background:linear-gradient(135deg,rgba(243,252,246,0.76),rgba(255,255,255,0.9) 48%,rgba(249,250,251,0.94));">
+  <div class="max-w-7xl mx-auto px-6 flex flex-col gap-5">
+    <div class="flex items-center gap-3">
+      <div class="w-1 h-7 rounded-full bg-[#063e27]"></div>
+      <h2 class="text-2xl font-bold text-[#063e27]">تواصل معنا</h2>
+    </div>
+    <div class="grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-5 items-stretch mt-6" dir="rtl">
+
+      <div class="flex flex-col gap-4">
+        {% for item in contact_items %}
+        <div class="flex items-center gap-4 p-4 rounded-2xl border bg-white" style="border-color:#d2d6db;box-shadow:0px 2px 4px -2px rgba(16,24,40,0.06);">
+          <div class="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style="background-color:#f3fcf6;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1b8354" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          </div>
+          <div>
+            <p class="text-xs font-medium mb-0.5" style="color:#4d5761;">{{ item.label }}</p>
+            <p class="text-sm font-bold" style="color:#1f2a37;">{{ item.value }}</p>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+      <div class="overflow-hidden rounded-2xl border border-gray-200 shadow-sm" style="min-height:0;">
+        <iframe src="https://www.google.com/maps/embed?pb=!1m17!1m12!1m3!1d1058.4!2d39.2513!3d21.491798!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m2!1m1!2zMjHCsDI5JzMwLjUiTiAzOcKwMTUnMDQuNyJF!5e1!3m2!1sar!2ssa!4v1767900000000!5m2!1sar!2ssa"
+                width="100%" height="100%" style="border:0;display:block;min-height:200px;"
+                allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade"
+                title="موقع جامعة الملك عبدالعزيز"></iframe>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+{% endblock %}

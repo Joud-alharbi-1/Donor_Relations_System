@@ -1,0 +1,49 @@
+{% extends "portal/base_portal.html" %}
+{% load static %}
+
+{% block title %}الجهات المانحة{% endblock %}
+
+{% block portal_nav %}
+  <a href="{% url 'beneficiary_dashboard' %}" class="px-4 py-3 text-sm font-medium text-[#4d5761] hover:text-[#161616] border-b-2 border-transparent transition-colors whitespace-nowrap">بوابة الجهات المستفيدة</a>
+  <a href="{% url 'beneficiary_donors' %}" class="px-4 py-3 text-sm font-medium text-[#1B8354] border-b-2 border-[#1B8354] whitespace-nowrap">الجهات المانحة</a>
+{% endblock %}
+
+{% block content %}
+<main class="max-w-screen-lg mx-auto px-4 sm:px-8 py-10">
+  <div class="mb-8">
+    <h1 class="text-[20px] font-bold text-[#161616]">الجهات المانحة</h1>
+    <p class="text-sm text-[#4d5761] mt-1">الجهات التي دعمت {{ beneficiary.name_ar }}</p>
+  </div>
+
+  {% if donors_data %}
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    {% for item in donors_data %}
+    <div class="rounded-[16px] bg-white p-5 shadow-[0px_4px_8px_-2px_rgba(16,24,40,0.10),0px_2px_4px_-2px_rgba(16,24,40,0.06)] flex items-center gap-4">
+
+      <div class="flex w-[48px] h-[48px] items-center justify-center rounded-full bg-[#F3FCF6] flex-shrink-0 overflow-hidden">
+        {% if item.donor.logo %}
+        <img src="{{ item.donor.logo.url }}" alt="{{ item.donor.name_ar }}" class="w-full h-full object-cover">
+        {% else %}
+        <span class="text-lg font-bold text-[#1B8354]">{{ item.donor.name_ar|first }}</span>
+        {% endif %}
+      </div>
+      <div>
+        <div class="text-sm font-semibold text-[#161616] leading-snug">{{ item.donor.name_ar }}</div>
+        <div class="flex items-center gap-3 mt-1">
+          <span class="text-xs text-[#4d5761]">{{ item.grants_count }} منح</span>
+          {% if item.category %}
+          <span class="w-1 h-1 rounded-full bg-[#d2d6db]"></span>
+          <span class="text-xs font-medium {{ item.category_color }}">الفئة: {{ item.category }}</span>
+          {% endif %}
+        </div>
+      </div>
+
+      
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="text-sm text-[#9CA3AF]">لا توجد جهات مانحة مرتبطة بمنح هذه الجهة حتى الآن.</p>
+  {% endif %}
+</main>
+{% endblock %}

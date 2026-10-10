@@ -1,0 +1,354 @@
+{% extends "portal/base_portal.html" %}
+{% load static %}
+ 
+{% block title %}بوابة الجهات المانحة{% endblock %}
+ 
+{% block portal_nav %}
+  <a href="{% url 'donor_dashboard' %}" class="px-4 py-3 text-sm font-medium text-[#1B8354] border-b-2 border-[#1B8354] whitespace-nowrap">بوابة الجهات المانحة</a>
+  <a href="{% url 'donor_beneficiaries' %}" class="px-4 py-3 text-sm font-medium text-[#4d5761] hover:text-[#161616] border-b-2 border-transparent transition-colors whitespace-nowrap">الجهات المستفيدة</a>
+{% endblock %}
+ 
+{% block content %}
+<div x-data="{ selectedGrantId: null, selectedReportGrantId: null }">
+ 
+  <main class="max-w-screen-lg mx-auto px-4 sm:px-8 py-10">
+ 
+    {# بطاقة هوية المانح #}
+    <div class="rounded-[16px] bg-white p-6 shadow-[0px_4px_8px_-2px_rgba(16,24,40,0.10),0px_2px_4px_-2px_rgba(16,24,40,0.06)] mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div class="flex items-center gap-4">
+        <div class="flex w-[56px] h-[56px] items-center justify-center rounded-full bg-[#F3FCF6] flex-shrink-0 overflow-hidden">
+          {% if donor.logo %}
+          <img src="{{ donor.logo.url }}" alt="{{ donor.name_ar }}" class="w-full h-full object-cover">
+          {% else %}
+          <span class="text-2xl font-bold text-[#1B8354]">{{ donor.name_ar|first }}</span>
+          {% endif %}
+        </div>
+        <div>
+          <h1 class="text-[20px] font-bold text-[#161616] leading-7">{{ donor.name_ar }}</h1>
+          <p class="text-sm text-[#4d5761] mt-0.5">الجهة المانحة، العام {{ current_year }}</p>
+        </div>
+      </div>
+      <div class="relative self-start sm:self-auto" x-data="{ showCategoryHistory: false }" @click.outside="showCategoryHistory = false">
+        <div class="flex items-center gap-1.5">
+          <button @click="showCategoryHistory = !showCategoryHistory" type="button" title="سجل الفئات حسب السنة"
+                  class="w-8 h-8 flex items-center justify-center rounded-full border transition-colors"
+                  :class="showCategoryHistory ? 'bg-[#F3FCF6] border-[#1B8354] text-[#1B8354]' : 'border-[#d2d6db] text-[#9DA4AE] hover:text-[#1B8354] hover:border-[#1B8354]'">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
+          </button>
+          {% if category %}
+          <span class="inline-flex items-center gap-1.5 px-3 h-8 rounded-full text-sm font-medium border bg-[#f3fcf6] text-[#14573a] border-[#c8e6c9]">
+            <span class="w-1.5 h-1.5 rounded-full bg-[#1B8354]"></span>
+            {{ category }}
+          </span>
+          {% endif %}
+        </div>
+
+        <div x-show="showCategoryHistory" x-cloak
+             class="absolute top-full mt-2 left-0 z-50 bg-white rounded-2xl border border-[#E5E7EB] shadow-[0px_12px_40px_-4px_rgba(16,24,40,0.18),0px_4px_12px_-4px_rgba(16,24,40,0.10)] p-4"
+             style="width: 260px;">
+          <p class="text-[10px] font-semibold text-[#9DA4AE] uppercase tracking-wide mb-3">سجل الفئات حسب السنة</p>
+          {% if category_history %}
+          <div class="space-y-1.5">
+            {% for e in category_history %}
+            <div class="flex items-center justify-between bg-[#F9FAFB] rounded-lg px-3 py-1.5">
+              <span class="text-xs font-mono text-[#4d5761]">{{ e.year }}</span>
+              <span class="text-xs font-medium {{ e.color }}">{{ e.category }}</span>
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <p class="text-xs text-[#9DA4AE]">لا يوجد سجل فئات بعد</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+
+    {# بطاقات الإحصائيات #}
+    <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-8">
+      <div class="rounded-[16px] bg-white p-6 shadow-[0px_4px_8px_-2px_rgba(16,24,40,0.10),0px_2px_4px_-2px_rgba(16,24,40,0.06)] flex items-center gap-4">
+        <div class="flex w-[48px] h-[48px] items-center justify-center rounded-full bg-[#F3FCF6] flex-shrink-0">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1B8354" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15.477 12.89 1.515 8.526a.5.5 0 0 1-.81.47l-3.58-2.687a1 1 0 0 0-1.197 0l-3.586 2.686a.5.5 0 0 1-.81-.469l1.514-8.526"/><circle cx="12" cy="8" r="6"/></svg>        </div>
+          
+          <div x-data="{ display: 0 }" x-init="const target = {{ grants_count }}; const duration = 1400; let start = null; function step(ts){ if(!start) start = ts; const p = Math.min((ts - start) / duration, 1); display = Math.round((1 - Math.pow(1 - p, 3)) * target); if (p < 1) requestAnimationFrame(step); } requestAnimationFrame(step)">
+            <div class="text-[18px] font-bold text-[#1B8354] leading-7" x-text="display.toLocaleString('en-US')"></div>
+            <div class="text-sm text-[#4d5761]">إجمالي منح الجهة</div>
+          </div>
+
+
+
+      </div>
+      <div class="rounded-[16px] bg-white p-6 shadow-[0px_4px_8px_-2px_rgba(16,24,40,0.10),0px_2px_4px_-2px_rgba(16,24,40,0.06)] flex items-center gap-4">
+        <div class="flex w-[48px] h-[48px] items-center justify-center rounded-full bg-[#F3FCF6] flex-shrink-0">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1B8354" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </div>
+        <div x-data="{ display: 0 }" x-init="const target = {{ total_beneficiaries }}; const duration = 1400; let start = null; function step(ts){ if(!start) start = ts; const p = Math.min((ts - start) / duration, 1); display = Math.round((1 - Math.pow(1 - p, 3)) * target); if (p < 1) requestAnimationFrame(step); } requestAnimationFrame(step)">
+          <div class="text-[18px] font-bold text-[#1B8354] leading-7" x-text="display.toLocaleString('en-US')"></div>
+          <div class="text-sm text-[#4d5761]">إجمالي المستفيدين</div>
+        </div>
+        
+
+
+      </div>
+      <div class="rounded-[16px] bg-white p-6 shadow-[0px_4px_8px_-2px_rgba(16,24,40,0.10),0px_2px_4px_-2px_rgba(16,24,40,0.06)] flex items-center gap-4">
+        <div class="flex w-[48px] h-[48px] items-center justify-center rounded-full bg-[#F3FCF6] flex-shrink-0">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1B8354" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21v-6"/><path d="M12 21V3"/><path d="M19 21V9"/></svg>        </div>
+          <div x-data="{ display: 0 }" x-init="const target = {{ total_amount|floatformat:'0' }}; const duration = 1400; let start = null; function step(ts){ if(!start) start = ts; const p = Math.min((ts - start) / duration, 1); display = Math.round((1 - Math.pow(1 - p, 3)) * target); if (p < 1) requestAnimationFrame(step); } requestAnimationFrame(step)">
+            <div class="text-[18px] font-bold text-[#1B8354] leading-7"><span x-text="display.toLocaleString('en-US')"></span> ﷼</div>
+            <div class="text-sm text-[#4d5761]">إجمالي مبلغ التبرع</div>
+          </div>
+
+
+      </div>
+    </div>
+ 
+    {# جدول المنح #}
+    <div class="rounded-[16px] bg-white shadow-[0px_4px_8px_-2px_rgba(16,24,40,0.10),0px_2px_4px_-2px_rgba(16,24,40,0.06)] overflow-hidden mb-8">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-[#E5E7EB]">
+        <h2 class="text-base font-semibold text-[#161616]">منح الجهة</h2>
+        <div class="inline-flex h-8 items-center justify-center gap-1 bg-[#f3fcf6] px-3 rounded-full">
+          <span class="text-sm font-medium text-[#14573a]">{{ grants_count }} منح</span>
+        </div>
+      </div>
+      {% if grants_data %}
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="bg-[#F3F4F6] border-b border-[#E5E7EB]">
+            <th class="text-right px-6 py-3 text-xs font-semibold text-[#4d5761] w-10">م</th>
+            <th class="text-right px-4 py-3 text-xs font-semibold text-[#4d5761]">المنحة</th>
+            <th class="text-right px-4 py-3 text-xs font-semibold text-[#4d5761]">نوع المنحة</th>
+            <th class="text-right px-4 py-3 text-xs font-semibold text-[#4d5761]">الجهة المستفيدة</th>
+            <th class="text-right px-4 py-3 text-xs font-semibold text-[#4d5761]">تقرير الأثر</th>
+            <th class="px-4 py-3 w-10"></th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-[#E5E7EB]">
+          {% for item in grants_data %}
+          <tr @click="selectedGrantId = {{ item.grant.id }}" class="hover:bg-[#F3F4F6] transition-colors cursor-pointer group">
+            <td class="px-6 py-4 text-xs font-mono text-[#9DA4AE]">{{ forloop.counter|stringformat:"02d" }}</td>
+            <td class="px-4 py-4 font-semibold text-[#161616]">{{ item.grant.title_ar }}</td>
+            <td class="px-4 py-4">
+              <div class="inline-flex h-8 items-center justify-center gap-1 bg-[#f3fcf6] px-3 rounded-full">
+                <span class="text-sm font-medium text-[#14573a]">{{ item.grant.get_type_display }}</span>
+              </div>
+            </td>
+            <td class="px-4 py-4">
+              <div class="flex items-center gap-2">
+                <div class="flex w-[32px] h-[32px] items-center justify-center rounded-full bg-[#F3FCF6] flex-shrink-0">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1B8354" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 18v-7"/><path d="M11.119 2.205a2 2 0 0 1 1.762 0l7.84 3.846A.5.5 0 0 1 20.5 7h-17a.5.5 0 0 1-.22-.949z"/><path d="M14 18v-7"/><path d="M18 18v-7"/><path d="M3 22h18"/><path d="M6 18v-7"/></svg>
+                </div>
+                <span class="text-[#1f2a37]">{{ item.grant.beneficiary.name_ar }}</span>
+              </div>
+            </td>
+            <td class="px-4 py-4">
+              {% if item.reports %}
+              <button @click.stop="selectedReportGrantId = {{ item.grant.id }}"
+                      class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#1B8354] text-[#1B8354] hover:bg-[#1B8354] hover:text-white text-xs font-medium transition-all whitespace-nowrap">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
+                عرض التقرير
+              </button>
+              {% else %}
+              <span class="text-xs text-[#9DA4AE] whitespace-nowrap">لا يوجد تقرير</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-4">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-[#4d5761] group-hover:text-[#1B8354] transition-colors"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <p class="px-6 py-10 text-center text-sm text-[#9CA3AF]">لا توجد منح مسجّلة لهذه الجهة حتى الآن.</p>
+      {% endif %}
+    </div>
+
+  </main>
+ 
+  {# نوافذ تفاصيل المنح — واحدة لكل منحة، تظهر بالضغط على صفها بالجدول #}
+  {% for item in grants_data %}
+  <div x-show="selectedGrantId === {{ item.grant.id }}" x-cloak
+       class="fixed inset-0 z-50 flex items-start justify-center bg-black/40 backdrop-blur-sm overflow-y-auto py-8 px-4">
+    <div class="bg-white w-full max-w-2xl rounded-[16px] shadow-[0px_20px_24px_-4px_rgba(16,24,40,0.10),0px_8px_8px_-4px_rgba(16,24,40,0.04)]" dir="rtl">
+ 
+      <div class="flex items-center justify-between px-6 py-4 border-b border-[#E5E7EB]">
+        <div>
+          <h2 class="text-base font-bold text-[#161616]">{{ item.grant.title_ar }}</h2>
+          <p class="text-xs text-[#4d5761] mt-0.5">{{ donor.name_ar }}</p>
+        </div>
+        <button @click="selectedGrantId = null" class="inline-flex w-8 h-8 items-center justify-center rounded border border-[#d2d6db] text-[#161616] hover:bg-[#F3F4F6] transition-colors">✕</button>
+      </div>
+ 
+      <div class="px-6 py-6 space-y-7">
+ 
+        {# بيانات المنحة #}
+        <section>
+          <h3 class="text-xs font-semibold text-[#4d5761] uppercase tracking-wide mb-3">بيانات المنحة</h3>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div class="bg-[#F3F4F6] rounded-[12px] px-4 py-3">
+              <div class="text-xs text-[#4d5761] mb-1">نوع المنحة</div>
+              <div class="text-sm font-semibold text-[#161616]">{{ item.grant.get_type_display }}</div>
+            </div>
+            <div class="bg-[#F3F4F6] rounded-[12px] px-4 py-3">
+              <div class="text-xs text-[#4d5761] mb-1">تاريخ المنحة</div>
+              <div class="text-sm font-semibold text-[#161616]">{{ item.grant.grant_date|date:"j/n/Y" }}</div>
+            </div>
+            <div class="bg-[#F3F4F6] rounded-[12px] px-4 py-3">
+              <div class="text-xs text-[#4d5761] mb-1">الجهة المستفيدة</div>
+              <div class="text-sm font-semibold text-[#161616]">{{ item.grant.beneficiary.name_ar }}</div>
+            </div>
+            <div class="bg-[#F3F4F6] rounded-[12px] px-4 py-3">
+              <div class="text-xs text-[#4d5761] mb-1">قرار قبول المنحة</div>
+              <div class="text-sm font-semibold text-[#161616]">{{ item.grant.decision_display }}</div>
+            </div>
+            <div class="bg-[#F3F4F6] rounded-[12px] px-4 py-3">
+              <div class="text-xs text-[#4d5761] mb-1">المبلغ / القيمة</div>
+              <div class="text-sm font-semibold text-[#161616]">{{ item.grant.amount }} ﷼</div>
+            </div>
+            <div class="bg-[#F3F4F6] rounded-[12px] px-4 py-3">
+              <div class="text-xs text-[#4d5761] mb-1">حالة المنحة</div>
+              <div class="text-sm font-semibold {% if item.grant.status == 'ongoing' %}text-[#1B8354]{% else %}text-[#4d5761]{% endif %}">{{ item.grant.get_status_display }}</div>
+            </div>
+          </div>
+        </section>
+ 
+        {# المستفيدون #}
+        <section>
+          <h3 class="text-xs font-semibold text-[#4d5761] uppercase tracking-wide mb-3 flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><path d="M16 3.128a4 4 0 0 1 0 7.744"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><circle cx="9" cy="7" r="4"/></svg> عدد ونوع المستفيدين</h3>
+          {% if item.counts %}
+          <div class="flex flex-wrap gap-3">
+            {% for c in item.counts %}
+            <div class="rounded-[16px] bg-white p-4 border border-[#d2d6db] flex items-center gap-3 shadow-[0px_4px_8px_-2px_rgba(16,24,40,0.10),0px_2px_4px_-2px_rgba(16,24,40,0.06)]">
+              <div class="flex w-[40px] h-[40px] items-center justify-center rounded-full bg-[#F3FCF6]">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1B8354" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><path d="M16 3.128a4 4 0 0 1 0 7.744"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><circle cx="9" cy="7" r="4"/></svg>
+              </div>
+              <div>
+                <div class="text-[18px] font-bold text-[#1B8354]">{{ c.count }}</div>
+                <div class="text-xs text-[#4d5761]">{{ c.display_category }}</div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <p class="text-sm text-[#9DA4AE]">لا يوجد مستفيدون مسجّلون بعد</p>
+          {% endif %}
+        </section>
+ 
+        {# الزيارات #}
+        <section>
+          <h3 class="text-xs font-semibold text-[#4d5761] uppercase tracking-wide mb-3 flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v3"/><path d="M16 2v3"/><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/></svg> الزيارات للجامعة</h3>
+          {% if item.visits %}
+          <div class="space-y-2">
+            {% for v in item.visits %}
+            <div class="flex items-start gap-3 text-sm bg-[#F3F4F6] rounded-[12px] px-4 py-3">
+              <span class="font-mono text-xs text-[#9DA4AE] mt-0.5 w-20 flex-shrink-0">{{ v.visit_date|date:"j/n/Y" }}</span>
+              <span class="text-[#1f2a37]">{{ v.description }}</span>
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <p class="text-sm text-[#9DA4AE]">لا توجد زيارات مسجلة</p>
+          {% endif %}
+        </section>
+ 
+        {# الأخبار #}
+        <section>
+          <h3 class="text-xs font-semibold text-[#4d5761] uppercase tracking-wide mb-3 flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18h-5"/><path d="M18 14h-8"/><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-4 0v-9a2 2 0 0 1 2-2h2"/><rect width="8" height="4" x="10" y="6" rx="1"/></svg> الأخبار</h3>
+          {% if item.news %}
+          <div class="space-y-2">
+            {% for n in item.news %}
+
+            <div class="flex items-start gap-3 text-sm">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1B8354" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="flex-shrink-0 mt-0.5"><path d="M21.801 10A10 10 0 1 1 17 3.335"/><path d="m9 11 3 3L22 4"/></svg>
+              <a href="{{ n.link }}" target="_blank" rel="noopener noreferrer" class="text-[#1B8354] hover:underline underline-offset-2">{{ n.title_ar }}</a>
+            </div>
+
+            {% endfor %}
+          </div>
+          {% else %}
+          <p class="text-sm text-[#9DA4AE]">لا توجد أخبار</p>
+          {% endif %}
+        </section>
+ 
+        {# الإعلانات #}
+        <section>
+          <h3 class="text-xs font-semibold text-[#4d5761] uppercase tracking-wide mb-3 flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 6a13 13 0 0 0 8.4-2.8A1 1 0 0 1 21 4v12a1 1 0 0 1-1.6.8A13 13 0 0 0 11 14H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z"/><path d="M6 14a12 12 0 0 0 2.4 7.2 2 2 0 0 0 3.2-2.4A8 8 0 0 1 10 14"/><path d="M8 6v8"/></svg> الإعلانات</h3>
+          {% if item.announcements %}
+          <div class="space-y-2">
+            {% for a in item.announcements %}
+            <div class="flex items-start gap-2 text-sm">
+              <span class="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0 mt-1.5"></span>
+              <a href="{{ a.link }}" target="_blank" rel="noopener noreferrer" class="text-[#1f2a37] hover:text-[#1B8354] hover:underline underline-offset-2">{{ a.title_ar }}</a>
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <p class="text-sm text-[#9DA4AE]">لا توجد إعلانات</p>
+          {% endif %}
+        </section>
+ 
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+
+  {# ── كارد تقرير الأثر (مستقل عن تفاصيل المنحة) — واحد لكل منحة فيها تقارير ── #}
+  {% for item in grants_data %}
+  {% if item.reports %}
+  {{ item.reports_json|json_script:item.reports_script_id }}
+  <div x-show="selectedReportGrantId === {{ item.grant.id }}" x-cloak
+       x-data="{ ridx: 0, reports: JSON.parse(document.getElementById('{{ item.reports_script_id }}').textContent) }"
+       class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
+    <div class="bg-white w-full max-w-xl rounded-[16px] shadow-[0px_20px_24px_-4px_rgba(16,24,40,0.10),0px_8px_8px_-4px_rgba(16,24,40,0.04)]" dir="rtl">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-[#E5E7EB]">
+        <div class="min-w-0 flex-1">
+          <h2 class="text-sm font-bold text-[#161616] flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1B8354" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="flex-shrink-0"><path d="M5 21v-6"/><path d="M12 21V3"/><path d="M19 21V9"/></svg>
+            تقرير الأثر
+          </h2>
+          <p class="text-xs text-[#4d5761] mt-0.5 truncate">{{ item.grant.title_ar }}</p>
+        </div>
+        <button @click="selectedReportGrantId = null" title="إغلاق" class="inline-flex w-8 h-8 items-center justify-center rounded border border-[#d2d6db] text-[#161616] hover:bg-[#F3F4F6] transition-colors flex-shrink-0 mr-3">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <div class="px-6 py-6 space-y-4">
+        <template x-if="(reports[ridx] || {}).isPdf">
+          <div class="relative rounded-lg border border-[#88D8AD]/50 bg-[#F3FCF6] overflow-hidden h-80">
+            <iframe :src="selectedReportGrantId === {{ item.grant.id }} ? (reports[ridx] || {}).url + '#toolbar=0&navpanes=0&scrollbar=0' : ''" class="w-full h-full" style="border:0;"></iframe>
+          </div>
+        </template>
+        <template x-if="!(reports[ridx] || {}).isPdf">
+          <div class="flex flex-col items-center justify-center gap-2 rounded-lg border border-[#88D8AD]/50 bg-[#F3FCF6] h-80 px-6 text-center">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#1B8354" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg>
+            <p class="text-sm font-medium text-[#14573a]" x-text="(reports[ridx] || {}).fileName"></p>
+            <p class="text-xs text-[#4d5761]">لا تتوفر معاينة لهذه الصيغة داخل الصفحة. يُرجى تحميل الملف لعرضه</p>
+          </div>
+        </template>
+
+        <div class="flex items-center gap-2">
+          <div class="relative flex-1">
+            <select x-model.number="ridx"
+                    class="w-full appearance-none bg-[#F3F4F6] border border-[#d2d6db] rounded text-sm text-[#161616] focus:outline-none focus:border-[#1B8354] transition-colors cursor-pointer"
+                    style="padding-top:8px; padding-bottom:8px; padding-right:16px; padding-left:40px;">
+              <template x-for="(r, i) in reports" :key="i">
+                <option :value="i" x-text="r.label"></option>
+              </template>
+            </select>
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="absolute top-1/2 -translate-y-1/2 text-[#4d5761] pointer-events-none" style="left:12px;"><path d="m6 9 6 6 6-6"/></svg>
+          </div>
+          <a :href="(reports[ridx] || {}).url" :download="(reports[ridx] || {}).fileName"
+             class="inline-flex py-2 items-center justify-center rounded border border-[#1B8354] bg-[#1B8354] px-4 text-sm font-medium text-white hover:bg-[#166A45] transition-colors gap-2 flex-shrink-0">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+            تحميل التقرير
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+  {% endfor %}
+
+</div>
+{% endblock %}

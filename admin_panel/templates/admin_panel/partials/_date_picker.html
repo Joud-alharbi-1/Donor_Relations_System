@@ -1,0 +1,41 @@
+<div x-data="datePicker({{ field }}, v => {{ field }} = v)" @click.outside="open = false" class="relative">
+  <button type="button" @click="toggle()"
+          class="w-full flex items-center gap-2 bg-white border border-[#d2d6db] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#1B8354] focus:ring-1 focus:ring-[#1B8354]/20 transition-all hover:border-[#1B8354]/50">
+    <svg class="w-4 h-4 text-[#9DA4AE] flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>
+    <span class="flex-1 text-right" :class="value ? 'text-[#161616]' : 'text-[#9DA4AE]'" x-text="value ? isoToDisplay(value) : '{{ placeholder }}'"></span>
+  </button>
+
+  <div x-show="open" x-cloak x-transition dir="rtl"
+       class="absolute z-50 mt-1 bg-white rounded-[14px] border border-[#E5E7EB] shadow-[0px_8px_24px_-4px_rgba(16,24,40,0.14)] p-4 w-[272px]"
+       style="top:100%; right:0;">
+    <div class="flex items-center justify-between mb-3">
+      <button type="button" @click="nextMonth()" class="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-[#F3F4F6] transition-colors text-[#4d5761]">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m9 18 6-6-6-6"/></svg>
+      </button>
+      <div class="flex items-center gap-1">
+        <button type="button" @click="viewYear -= 1" class="text-[11px] text-[#4d5761] hover:text-[#161616] transition-colors px-1">‹</button>
+        <span class="text-sm font-semibold text-[#161616] min-w-[2.5rem] text-center" x-text="viewYear"></span>
+        <button type="button" @click="viewYear += 1" class="text-[11px] text-[#4d5761] hover:text-[#161616] transition-colors px-1">›</button>
+        <span class="text-sm font-medium text-[#161616] mr-1" x-text="monthsAr[viewMonth]"></span>
+      </div>
+      <button type="button" @click="prevMonth()" class="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-[#F3F4F6] transition-colors text-[#4d5761]">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m15 18-6-6 6-6"/></svg>
+      </button>
+    </div>
+    <div class="grid grid-cols-7 mb-1">
+      <template x-for="d in daysAr" :key="d">
+        <div class="h-8 flex items-center justify-center text-[10px] font-semibold text-[#9DA4AE]" x-text="d"></div>
+      </template>
+    </div>
+    <div class="grid grid-cols-7 gap-y-0.5">
+      <template x-for="(day, idx) in cells" :key="idx">
+        <button type="button" @click="day && selectDay(day)"
+                class="h-8 w-full rounded-lg text-sm font-medium transition-colors"
+                :class="day === null ? 'invisible pointer-events-none' : (isSelected(day) ? 'bg-[#1B8354] text-white' : (isToday(day) ? 'border border-[#1B8354] text-[#1B8354]' : 'text-[#1f2a37] hover:bg-[#F3FCF6] hover:text-[#1B8354]'))"
+                x-text="day"></button>
+      </template>
+    </div>
+    <button type="button" @click="selectToday()"
+            class="mt-3 w-full py-1.5 rounded-lg border border-[#d2d6db] text-xs text-[#4d5761] hover:border-[#1B8354] hover:text-[#1B8354] hover:bg-[#F3FCF6] transition-colors">اليوم</button>
+  </div>
+</div>

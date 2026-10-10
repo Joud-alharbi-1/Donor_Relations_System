@@ -1,0 +1,42 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}إدارة علاقات المانحين — جامعة الملك عبدالعزيز{% endblock %}</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+  {# Tailwind عبر CDN لهذه التجربة فقط — في المشروع الفعلي يُستبدل ببناء Tailwind محلي #}
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>[x-cloak] { display: none !important; }</style>
+
+  {# Alpine.js — يمنح التفاعل (تبويبات، هوفر) دون أي JavaScript يدوي مبعثر #}
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+  <link rel="stylesheet" href="{% static 'css/custom.css' %}">
+</head>
+<body dir="rtl" class="min-h-screen bg-white flex flex-col" style="font-family:'IBM Plex Sans Arabic',sans-serif;">
+
+  {% include "includes/header.html" %}
+
+  <main class="flex-1">
+    {% if messages %}
+      <div class="max-w-2xl mx-auto px-4 pt-4">
+        {% for message in messages %}
+        <div class="flex items-center gap-3 px-4 py-3 rounded-xl mb-3" style="background-color:#fdf2f2; border:1px solid #f5c6c6;">
+          <span class="text-sm font-medium" style="color:#d4183d;">{{ message }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+    {% block content %}{% endblock %}
+  </main>
+
+  {% include "includes/footer.html" %}
+
+</body>
+</html>
